@@ -206,8 +206,8 @@ You can look at design concepts used to express the rules:
 
 简介:
 
-* [In.目的: 目标读者](#SS-readers)
-* [In.目标: 目标](#SS-aims)
+* [目标读者](#SS-readers)
+* [目标](#SS-aims)
 * [In.not: Non-aims](#SS-non)
 * [In.强制: 强制](#SS-force)
 * [In.结构: 文档结构](#SS-struct)
@@ -217,27 +217,23 @@ You can look at design concepts used to express the rules:
 
 所有的C++编程人员，包括[可能会考虑C的程序员](#S-cpl)。
 
-## <a name="SS-aims"></a>In.aims: Aims
+## <a name="SS-aims"></a>目标
 
-The purpose of this document is to help developers to adopt modern C++ (currently C++17) and to achieve a more uniform style across code bases.
+本文档的目的是为了帮助开发者使用现代C++（目前C++17）和在不同代码库之间达成更为统一的风格。
 
-We do not suffer the delusion that every one of these rules can be effectively applied to every code base. Upgrading old systems is hard. However, we do believe that a program that uses a rule is less error-prone and more maintainable than one that does not. Often, rules also lead to faster/easier initial development.
-As far as we can tell, these rules lead to code that performs as well or better than older, more conventional techniques; they are meant to follow the zero-overhead principle ("what you don't use, you don't pay for" or "when you use an abstraction mechanism appropriately, you get at least as good performance as if you had handcoded using lower-level language constructs").
-Consider these rules ideals for new code, opportunities to exploit when working on older code, and try to approximate these ideals as closely as feasible.
-Remember:
+不要产生每条规则都可以有效地适用每个代码库的错觉，旧有的代码库很难升级，但我们相信使用规则的程序更不易于出错，更具可维护性，通常规则也使得初始开发更加快速和容易。至少我们可以说，这些规则可以让代码性能至少像古老的甚至更传统的技术一样好，或者更优秀。使用这些零开销的原则（”不使用，不花钱“，或者当你适当地使用抽象机制时，至少可以获得与使用低级语言结构手工编码时一样好的性能）。这些规则是新代码的理想规则，在处理旧代码是这发挥的机会，尽可以地接近这些理想的规则。
 
-### <a name="R0"></a>In.0: Don't panic!
+### <a name="R0"></a>别慌
 
-Take the time to understand the implications of a guideline rule on your program.
+花点时间来理解指引规则对您程序的意义。
 
-These guidelines are designed according to the "subset of superset" principle ([Stroustrup05](#Stroustrup05)).
-They do not simply define a subset of C++ to be used (for reliability, safety, performance, or whatever).
-Instead, they strongly recommend the use of a few simple "extensions" ([library components](#S-gsl))
-that make the use of the most error-prone features of C++ redundant, so that they can be banned (in our set of rules).
+这些指南遵循“超集的子集”这一原则[Stroustrup05](#Stroustrup05)，它们并非简单的定义一个C++的子集来使用（为了可靠性，安全性，性能或者其它什么），相反，它们强烈推荐使用一些简单的“扩展”([库组件](#S-gsl))，这使得使用c++中最容易出错的特性变得多余，因此它们可以被禁止(在我们的规则集中)。
 
-The rules emphasize static type safety and resource safety.
-For that reason, they emphasize possibilities for range checking, for avoiding dereferencing `nullptr`, for avoiding dangling pointers, and the systematic use of exceptions (via RAII).
-Partly to achieve that and partly to minimize obscure code as a source of errors, the rules also emphasize simplicity and the hiding of necessary complexity behind well-specified interfaces.
+规则强调静态类型安全性和资源安全性。
+因此，他们强调范围检查的可能性，避免取消对“nullptr”的引用，避免悬空指针，以及系统地使用异常(通过RAII)。
+部分是为了实现这一点，部分是为了将晦涩的代码作为错误的来源最小化，规则还强调了简单性和在良好指定的接口后面隐藏必要的复杂性。
+
+这些规则强化了静态类型安全和资源安全，因此它们强调了范围检查的可能性，避免对‘nullptr’进行解引用，避免悬垂指针，以及系统地使用异常（通过RAII）。部分是为了实现这一点，部分是为了将晦涩的代码作为错误的来源最小化，规则还强调了简单性和在良好指定的接口后面隐藏必要的复杂性。
 
 Many of the rules are prescriptive.
 We are uncomfortable with rules that simply state "don't do that!" without offering an alternative.
