@@ -46,7 +46,7 @@ Supporting sections:
 * [NR: Non-Rules and myths](#S-not)
 * [RF: 引用](#S-references)
 * [Pro: Profiles](#S-profile)
-* [GSL: 指引库](#S-gsl)
+* [GSL: 指南库](#S-gsl)
 * [NL: 命名和布局规则](#S-naming)
 * [FAQ: 常见问题解答](#S-faq)
 * [附录 A: 库](#S-libraries)
@@ -181,54 +181,41 @@ You can look at design concepts used to express the rules:
 
 # <a name="S-abstract"></a>摘要
 
-本文档也是C++的指引集，该文档的目的是帮助大家更高效地使用现在C++，“现代”意味着有效的使用符合IOS的C++标准（目前是C++17，但大部分的建议也适用于C++14和C++11），换句话说，您希望5年后您的代码是什么样的？现在就开始吧。那么10年后呢？
+本文档也是C++的指南集，该文档的目的是帮助大家更高效地使用现在C++，“现代”意味着有效的使用符合IOS的C++标准（目前是C++17，但大部分的建议也适用于C++14和C++11），换句话说，您希望5年后您的代码是什么样的？现在就开始吧。那么10年后呢？
 
-该指引聚焦于相对高层次的问题，例如接口，资源管理，内存管理以及并发等，这些规则影响于应用架构和库的设计，相对于现今常用的规范，使用这些规则可以让代码静态类型安全，无资源泄漏，捕获更多的编程逻辑错误，并且可以让代码运行的更快，总之，值得您去做这些事情。
+该指南聚焦于相对高层次的问题，例如接口，资源管理，内存管理以及并发等，这些规则影响于应用架构和库的设计，相对于现今常用的规范，使用这些规则可以让代码静态类型安全，无资源泄漏，捕获更多的编程逻辑错误，并且可以让代码运行的更快，总之，值得您去做这些事情。
 
-We are less concerned with low-level issues, such as naming conventions and indentation style.
-However, no topic that can help a programmer is out of bounds.
+我们不太关注底层问题，如命名规范和对齐风格。然而，无用的废话是越线的。
 
-Our initial set of rules emphasizes safety (of various forms) and simplicity.
-They may very well be too strict.
-We expect to have to introduce more exceptions to better accommodate real-world needs.
-We also need more rules.
+我们最初的规则集合强化的安全性（多种形式）和简洁性，它们可以会太严格，希望没有引入更多的异常来适应现实的需求，但我们需要更多的规则。
 
-You will find some of the rules contrary to your expectations or even contrary to your experience.
-If we haven't suggested you change your coding style in any way, we have failed!
-Please try to verify or disprove rules!
-In particular, we'd really like to have some of our rules backed up with measurements or better examples.
+您将会发现一些规则会违背您的预期，甚至违背您过往经历，如果我们不能用任何方式说服您改变您的编程风格，那么我们就失败了！请尝试来验证或否定这些规则。我们尤其希望能有一些测试或更好的案例来支持我们的规则。
 
-You will find some of the rules obvious or even trivial.
-Please remember that one purpose of a guideline is to help someone who is less experienced or coming from a different background or language to get up to speed.
+您也发现一些明显的甚至琐碎的规则，请记住我们指南的目的是为了帮助那些缺乏经验的，其它语言转移过来的，或者需要来提升该语言的人。
 
-Many of the rules are designed to be supported by an analysis tool.
-Violations of rules will be flagged with references (or links) to the relevant rule.
-We do not expect you to memorize all the rules before trying to write code.
-One way of thinking about these guidelines is as a specification for tools that happens to be readable by humans.
+大多的规则被设计成可以被分析工具来支持，违反的规则被标记出（链接）到相应的规则。我们不希望您在写代码之前记住所有的规则，一种理解是可以把该文档当成碰巧可以被阅读的（分析）工具的说明书。
 
-The rules are meant for gradual introduction into a code base.
-We plan to build tools for that and hope others will too.
+这些规则用于逐步引入代码库，我们计划为此开发工具，并希望其他人也能这样做。
 
-Comments and suggestions for improvements are most welcome.
-We plan to modify and extend this document as our understanding improves and the language and the set of available libraries improve.
+欢迎对改进提出意见和建议，随着我们对该文档的理解提高，以及语言和可用库集的改进，我们计划修改和扩展该文档。
 
-# <a name="S-introduction"></a>In: Introduction
+# <a name="S-introduction"></a>In: 介绍
 
-This is a set of core guidelines for modern C++ (currently C++17) taking likely future enhancements and ISO Technical Specifications (TSs) into account.
-The aim is to help C++ programmers to write simpler, more efficient, more maintainable code.
+这是一组针对现代c++(目前c++17)的核心指南，考虑了将来可能的增强和ISO技术规范(TSs)。
+其目的是帮助c++程序员编写更简单、更高效、更易于维护的代码。
 
-Introduction summary:
+简介:
 
-* [In.target: Target readership](#SS-readers)
-* [In.aims: Aims](#SS-aims)
+* [In.目的: 目标读者](#SS-readers)
+* [In.目标: 目标](#SS-aims)
 * [In.not: Non-aims](#SS-non)
-* [In.force: Enforcement](#SS-force)
-* [In.struct: The structure of this document](#SS-struct)
-* [In.sec: Major sections](#SS-sec)
+* [In.强制: 强制](#SS-force)
+* [In.结构: 文档结构](#SS-struct)
+* [In.sec: 主要部分](#SS-sec)
 
-## <a name="SS-readers"></a>In.target: Target readership
+## <a name="SS-readers"></a>目标读者
 
-All C++ programmers. This includes [programmers who might consider C](#S-cpl).
+所有的C++编程人员，包括[可能会考虑C的程序员](#S-cpl)。
 
 ## <a name="SS-aims"></a>In.aims: Aims
 
@@ -418,7 +405,7 @@ Recommended information sources can be found in [the references](#S-references).
 * [NR: Non-Rules and myths](#S-not)
 * [RF: 引用](#S-references)
 * [Pro: Profiles](#S-profile)
-* [GSL: 指引库](#S-gsl)
+* [GSL: 指南库](#S-gsl)
 * [NL: 命名和布局规则](#S-naming)
 * [FAQ: 常见问题解答](#S-faq)
 * [附录 A: 库](#S-libraries)
