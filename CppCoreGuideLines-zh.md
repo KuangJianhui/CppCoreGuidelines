@@ -235,16 +235,12 @@ You can look at design concepts used to express the rules:
 
 这些规则强化了静态类型安全和资源安全，因此它们强调了范围检查的可能性，避免对‘nullptr’进行解引用，避免悬垂指针，以及系统地使用异常（通过RAII）。部分是为了实现这一点，部分是为了将晦涩的代码作为错误的来源最小化，规则还强调了简单性和在良好指定的接口后面隐藏必要的复杂性。
 
-Many of the rules are prescriptive.
-We are uncomfortable with rules that simply state "don't do that!" without offering an alternative.
-One consequence of that is that some rules can be supported only by heuristics, rather than precise and mechanically verifiable checks.
-Other rules articulate general principles. For these more general rules, more detailed and specific rules provide partial checking.
+许多规则都是规范性的。
+我们对那些只说“不要那样做!”而不提供其他选择的规则感到不舒服。
+这样做的一个结果是，某些规则只能由启发式来支持，而不能由精确且可自动验证的检查来支持。
+其他规则阐明了一般原则，对于这些更通用，更详细和具体的规则则提供部分检查。
 
-These guidelines address the core of C++ and its use.
-We expect that most large organizations, specific application areas, and even large projects will need further rules, possibly further restrictions, and further library support.
-For example, hard-real-time programmers typically can't use free store (dynamic memory) freely and will be restricted in their choice of libraries.
-We encourage the development of such more specific rules as addenda to these core guidelines.
-Build your ideal small foundation library and use that, rather than lowering your level of programming to glorified assembly code.
+这些指南指出了C++的核心及作用，我们期望大型组织，特定的应用领域，甚至大的项目需要更多的规则，或许是更多的限制和更多的库支持。例如，硬（件）实时程序通常不能使用自由地自由存储（动态内存），并且限度库的使用选择。我们鼓励制定更为特定的规则，作为这些核心指南的补充。构建您理想的小型基础库并使用它，而不是使用更低层次的美化汇编代码。
 
 The rules are designed to allow [gradual adoption](#S-modernizing).
 
