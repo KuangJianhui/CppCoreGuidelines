@@ -73,37 +73,37 @@ Supporting sections:
 [helpers](#Rc-helper) --
 [具体类型](#SS-concrete) --
 [构造函数, =, 析构函数](#S-ctor) --
-[hierarchy](#SS-hier) --
-[operators](#SS-overload)
+[层次](#SS-hier) --
+[操作符](#SS-overload)
 * `concept`:
-[rules](#SS-concepts) --
-[in generic programming](#Rt-raise) --
-[template arguments](#Rt-concepts) --
-[semantics](#Rt-low)
-* constructor:
-[invariant](#Rc-struct) --
-[establish invariant](#Rc-ctor) --
+[规则](#SS-concepts) --
+[泛型编程](#Rt-raise) --
+[模板参数](#Rt-concepts) --
+[语义](#Rt-low)
+* 构造函数:
+[不变量](#Rc-struct) --
+[创建不变量](#Rc-ctor) --
 [`throw`](#Rc-throw) --
-[default](#Rc-default0) --
+[默认值](#Rc-default0) --
 [not needed](#Rc-default) --
-[`explicit`](#Rc-explicit) --
-[delegating](#Rc-delegating) --
-[`virtual`](#Rc-ctor-virtual)
-* derived `class`:
-[when to use](#Rh-domain) --
-[as interface](#Rh-abstract) --
-[destructors](#Rh-dtor) --
-[copy](#Rh-copy) --
+[显式](#Rc-explicit) --
+[代理](#Rc-delegating) --
+[虚拟](#Rc-ctor-virtual)
+* 派生类:
+[何时需要](#Rh-domain) --
+[作为接口](#Rh-abstract) --
+[析构函数](#Rh-dtor) --
+[复制](#Rh-copy) --
 [getters and setters](#Rh-get) --
-[multiple inheritance](#Rh-mi-interface) --
-[overloading](#Rh-using) --
-[slicing](#Rc-copy-virtual) --
+[多重继承](#Rh-mi-interface) --
+[重载](#Rh-using) --
+[切片](#Rc-copy-virtual) --
 [`dynamic_cast`](#Rh-dynamic_cast)
-* destructor:
-[and constructors](#Rc-matched) --
-[when needed?](#Rc-dtor) --
-[may not fail](#Rc-dtor-fail)
-* exception:
+* 析构函数:
+[构造函数](#Rc-matched) --
+[何时需要?](#Rc-dtor) --
+[不应失败](#Rc-dtor-fail)
+* 异常:
 [errors](#S-errors) --
 [`throw`](#Re-throw) --
 [for errors only](#Re-errors) --
@@ -179,17 +179,11 @@ You can look at design concepts used to express the rules:
 * postcondition: ???
 * resource: ???
 
-# <a name="S-abstract"></a>Abstract
+# <a name="S-abstract"></a>摘要
 
-This document is a set of guidelines for using C++ well.
-The aim of this document is to help people to use modern C++ effectively.
-By "modern C++" we mean effective use of the ISO C++ standard (currently C++17, but almost all of our recommendations also apply to C++14 and C++11).
-In other words, what would you like your code to look like in 5 years' time, given that you can start now? In 10 years' time?
+本文档也是C++的指引集，该文档的目的是帮助大家更高效地使用现在C++，“现代”意味着有效的使用符合IOS的C++标准（目前是C++17，但大部分的建议也适用于C++14和C++11），换句话说，您希望5年后您的代码是什么样的？现在就开始吧。那么10年后呢？
 
-The guidelines are focused on relatively high-level issues, such as interfaces, resource management, memory management, and concurrency.
-Such rules affect application architecture and library design.
-Following the rules will lead to code that is statically type safe, has no resource leaks, and catches many more programming logic errors than is common in code today.
-And it will run fast -- you can afford to do things right.
+该指引聚焦于相对高层次的问题，例如接口，资源管理，内存管理以及并发等，这些规则影响于应用架构和库的设计，相对于现今常用的规范，使用这些规则可以让代码静态类型安全，无资源泄漏，捕获更多的编程逻辑错误，并且可以让代码运行的更快，总之，值得您去做这些事情。
 
 We are less concerned with low-level issues, such as naming conventions and indentation style.
 However, no topic that can help a programmer is out of bounds.
