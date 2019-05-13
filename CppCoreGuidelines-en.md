@@ -1,109 +1,113 @@
-d# <a name="main"></a> C++核心指导
+d# <a name="main"></a>C++ Core Guidelines
 
 March 7, 2019
 
 
-作者:
+Editors:
 
 * [Bjarne Stroustrup](http://www.stroustrup.com)
 * [Herb Sutter](http://herbsutter.com/)
 
-翻译：
-* Real Xie 
+This is a living document under continuous improvement.
+Had it been an open-source (code) project, this would have been release 0.8.
+Copying, use, modification, and creation of derivative works from this project is licensed under an MIT-style license.
+Contributing to this project requires agreeing to a Contributor License. See the accompanying [LICENSE](LICENSE) file for details.
+We make this project available to "friendly users" to use, copy, modify, and derive from, hoping for constructive input.
 
-这是一个持续更新的文档，已经更新到0.8的版本，复制，使用，修改以及在此工程上的衍生创建都基于MIT风格的许可（license）。向本工程贡献内容需要同意贡献者许可（Contributor License），更多细节参考相关的[LICENSE](LICENSE) 文档。该项目允许友好的用户使用，复制，修改以及再创作，也期待有建设性的意见。
+Comments and suggestions for improvements are most welcome.
+We plan to modify and extend this document as our understanding improves and the language and the set of available libraries improve.
+When commenting, please note [the introduction](#S-introduction) that outlines our aims and general approach.
+The list of contributors is [here](#SS-ack).
 
-欢迎评论和建议，我们计划修改和扩展来提升对该语言的认识，以及改进可使用的library集合。当评论时请注明[the introduction](#S-introduction) 来概述我们的目的和通用方法。贡献者列表[here](#SS-ack)。
+Problems:
 
-问题：
-* 完成度，一致性和强制性的规则集合还未完全进行检查。
-* ???来标记遗失的信息。
-* 引用部分的更新；太多pre-c++资源过于陈旧。
-* 或多或少的待定列表，见：[待定: 未分类的原型规则（protos-rule）](#S-unclassified)
+* The sets of rules have not been completely checked for completeness, consistency, or enforceability.
+* Triple question marks (???) mark known missing information
+* Update reference sections; many pre-C++11 sources are too old.
+* For a more-or-less up-to-date to-do list see: [To-do: Unclassified proto-rules](#S-unclassified)
 
-您可以[read an explanation of the scope and structure of this Guide](#S-abstract)或直接跳到：
+You can [read an explanation of the scope and structure of this Guide](#S-abstract) or just jump straight in:
 
-* [In: 介绍](#S-introduction)
-* [P: 哲学](#S-philosophy)
-* [I: ru](接口#S-interfaces)
-* [F: 函数](#S-functions)
-* [C: 类和类层次](#S-class)
-* [Enum: 枚举](#S-enum)
-* [R: 资源管理](#S-resource)
-* [ES: 表达式和声明](#S-expr)
-* [Per: 性能](#S-performance)
-* [CP: 并发和并行](#S-concurrency)
-* [E: 错误处理](#S-errors)
-* [Con: 常量和不变性](#S-const)
-* [T: 模板和泛型编程](#S-templates)
-* [CPL: C风格编程](#S-cpl)
-* [SF: 源文件](#S-source)
-* [SL: 标准库](#S-stdlib)
+* [In: Introduction](#S-introduction)
+* [P: Philosophy](#S-philosophy)
+* [I: Interfaces](#S-interfaces)
+* [F: Functions](#S-functions)
+* [C: Classes and class hierarchies](#S-class)
+* [Enum: Enumerations](#S-enum)
+* [R: Resource management](#S-resource)
+* [ES: Expressions and statements](#S-expr)
+* [Per: Performance](#S-performance)
+* [CP: Concurrency and parallelism](#S-concurrency)
+* [E: Error handling](#S-errors)
+* [Con: Constants and immutability](#S-const)
+* [T: Templates and generic programming](#S-templates)
+* [CPL: C-style programming](#S-cpl)
+* [SF: Source files](#S-source)
+* [SL: The Standard Library](#S-stdlib)
 
 Supporting sections:
 
-* [A: 架构思想](#S-A)
+* [A: Architectural ideas](#S-A)
 * [NR: Non-Rules and myths](#S-not)
-* [RF: 引用](#S-references)
+* [RF: References](#S-references)
 * [Pro: Profiles](#S-profile)
-* [GSL: 指南库](#S-gsl)
-* [NL: 命名和布局规则](#S-naming)
-* [FAQ: 常见问题解答](#S-faq)
-* [附录 A: 库](#S-libraries)
-* [附录 B: 现代化的代码](#S-modernizing)
-* [附录 C: 讨论](#S-discussion)
-* [附录 D: 支持工具](#S-tools)
-* [术语](#S-glossary)
-* [待定: 未分类的原型规则](#S-unclassified)
+* [GSL: Guidelines support library](#S-gsl)
+* [NL: Naming and layout rules](#S-naming)
+* [FAQ: Answers to frequently asked questions](#S-faq)
+* [Appendix A: Libraries](#S-libraries)
+* [Appendix B: Modernizing code](#S-modernizing)
+* [Appendix C: Discussion](#S-discussion)
+* [Appendix D: Supporting tools](#S-tools)
+* [Glossary](#S-glossary)
+* [To-do: Unclassified proto-rules](#S-unclassified)
 
+You can sample rules for specific language features:
 
-您可以摘取特定的语言我：
-
-* 赋值:
-[整齐类型](#Rc-regular) --
+* assignment:
+[regular types](#Rc-regular) --
 [prefer initialization](#Rc-initialize) --
-[复制](#Rc-copy-semantic) --
-[移动](#Rc-move-semantic) --
-[其它操作](#Rc-matched) --
-[默认值](#Rc-eqdefault)
-* `类`:
-[数据](#Rc-org) --
-[不变量](#Rc-struct) --
-[成员](#Rc-member) --
+[copy](#Rc-copy-semantic) --
+[move](#Rc-move-semantic) --
+[other operations](#Rc-matched) --
+[default](#Rc-eqdefault)
+* `class`:
+[data](#Rc-org) --
+[invariant](#Rc-struct) --
+[members](#Rc-member) --
 [helpers](#Rc-helper) --
-[具体类型](#SS-concrete) --
-[构造函数, =, 析构函数](#S-ctor) --
-[层次](#SS-hier) --
-[操作符](#SS-overload)
+[concrete types](#SS-concrete) --
+[ctors, =, and dtors](#S-ctor) --
+[hierarchy](#SS-hier) --
+[operators](#SS-overload)
 * `concept`:
-[规则](#SS-concepts) --
-[泛型编程](#Rt-raise) --
-[模板参数](#Rt-concepts) --
-[语义](#Rt-low)
-* 构造函数:
-[不变量](#Rc-struct) --
-[创建不变量](#Rc-ctor) --
+[rules](#SS-concepts) --
+[in generic programming](#Rt-raise) --
+[template arguments](#Rt-concepts) --
+[semantics](#Rt-low)
+* constructor:
+[invariant](#Rc-struct) --
+[establish invariant](#Rc-ctor) --
 [`throw`](#Rc-throw) --
-[默认值](#Rc-default0) --
+[default](#Rc-default0) --
 [not needed](#Rc-default) --
-[显式](#Rc-explicit) --
-[代理](#Rc-delegating) --
-[虚拟](#Rc-ctor-virtual)
-* 派生类:
-[何时需要](#Rh-domain) --
-[作为接口](#Rh-abstract) --
-[析构函数](#Rh-dtor) --
-[复制](#Rh-copy) --
+[`explicit`](#Rc-explicit) --
+[delegating](#Rc-delegating) --
+[`virtual`](#Rc-ctor-virtual)
+* derived `class`:
+[when to use](#Rh-domain) --
+[as interface](#Rh-abstract) --
+[destructors](#Rh-dtor) --
+[copy](#Rh-copy) --
 [getters and setters](#Rh-get) --
-[多重继承](#Rh-mi-interface) --
-[重载](#Rh-using) --
-[切片](#Rc-copy-virtual) --
+[multiple inheritance](#Rh-mi-interface) --
+[overloading](#Rh-using) --
+[slicing](#Rc-copy-virtual) --
 [`dynamic_cast`](#Rh-dynamic_cast)
-* 析构函数:
-[构造函数](#Rc-matched) --
-[何时需要?](#Rc-dtor) --
-[不应失败](#Rc-dtor-fail)
-* 异常:
+* destructor:
+[and constructors](#Rc-matched) --
+[when needed?](#Rc-dtor) --
+[may not fail](#Rc-dtor-fail)
+* exception:
 [errors](#S-errors) --
 [`throw`](#Re-throw) --
 [for errors only](#Re-errors) --
@@ -179,76 +183,103 @@ You can look at design concepts used to express the rules:
 * postcondition: ???
 * resource: ???
 
-# <a name="S-abstract"></a>摘要
+# <a name="S-abstract"></a>Abstract
 
-本文档也是C++的指南集，该文档的目的是帮助大家更高效地使用现在C++，“现代”意味着有效的使用符合IOS的C++标准（目前是C++17，但大部分的建议也适用于C++14和C++11），换句话说，您希望5年后您的代码是什么样的？现在就开始吧。那么10年后呢？
+This document is a set of guidelines for using C++ well.
+The aim of this document is to help people to use modern C++ effectively.
+By "modern C++" we mean effective use of the ISO C++ standard (currently C++17, but almost all of our recommendations also apply to C++14 and C++11).
+In other words, what would you like your code to look like in 5 years' time, given that you can start now? In 10 years' time?
 
-该指南聚焦于相对高层次的问题，例如接口，资源管理，内存管理以及并发等，这些规则影响于应用架构和库的设计，相对于现今常用的规范，使用这些规则可以让代码静态类型安全，无资源泄漏，捕获更多的编程逻辑错误，并且可以让代码运行的更快，总之，值得您去做这些事情。
+The guidelines are focused on relatively high-level issues, such as interfaces, resource management, memory management, and concurrency.
+Such rules affect application architecture and library design.
+Following the rules will lead to code that is statically type safe, has no resource leaks, and catches many more programming logic errors than is common in code today.
+And it will run fast -- you can afford to do things right.
 
-我们不太关注底层问题，如命名规范和对齐风格。然而，无用的废话是越线的。
+We are less concerned with low-level issues, such as naming conventions and indentation style.
+However, no topic that can help a programmer is out of bounds.
 
-我们最初的规则集合强化的安全性（多种形式）和简洁性，它们可以会太严格，希望没有引入更多的异常来适应现实的需求，但我们需要更多的规则。
+Our initial set of rules emphasizes safety (of various forms) and simplicity.
+They may very well be too strict.
+We expect to have to introduce more exceptions to better accommodate real-world needs.
+We also need more rules.
 
-您将会发现一些规则会违背您的预期，甚至违背您过往经历，如果我们不能用任何方式说服您改变您的编程风格，那么我们就失败了！请尝试来验证或否定这些规则。我们尤其希望能有一些测试或更好的案例来支持我们的规则。
+You will find some of the rules contrary to your expectations or even contrary to your experience.
+If we haven't suggested you change your coding style in any way, we have failed!
+Please try to verify or disprove rules!
+In particular, we'd really like to have some of our rules backed up with measurements or better examples.
 
-您也发现一些明显的甚至琐碎的规则，请记住我们指南的目的是为了帮助那些缺乏经验的，其它语言转移过来的，或者需要来提升该语言的人。
+You will find some of the rules obvious or even trivial.
+Please remember that one purpose of a guideline is to help someone who is less experienced or coming from a different background or language to get up to speed.
 
-大多的规则被设计成可以被分析工具来支持，违反的规则被标记出（链接）到相应的规则。我们不希望您在写代码之前记住所有的规则，一种理解是可以把该文档当成碰巧可以被阅读的（分析）工具的说明书。
+Many of the rules are designed to be supported by an analysis tool.
+Violations of rules will be flagged with references (or links) to the relevant rule.
+We do not expect you to memorize all the rules before trying to write code.
+One way of thinking about these guidelines is as a specification for tools that happens to be readable by humans.
 
-这些规则用于逐步引入代码库，我们计划为此开发工具，并希望其他人也能这样做。
+The rules are meant for gradual introduction into a code base.
+We plan to build tools for that and hope others will too.
 
-欢迎对改进提出意见和建议，随着我们对该文档的理解提高，以及语言和可用库集的改进，我们计划修改和扩展该文档。
+Comments and suggestions for improvements are most welcome.
+We plan to modify and extend this document as our understanding improves and the language and the set of available libraries improve.
 
-# <a name="S-introduction"></a>In: 介绍
+# <a name="S-introduction"></a>In: Introduction
 
-这是一组针对现代c++(目前c++17)的核心指南，考虑了将来可能的增强和ISO技术规范(TSs)。
-其目的是帮助c++程序员编写更简单、更高效、更易于维护的代码。
+This is a set of core guidelines for modern C++ (currently C++17) taking likely future enhancements and ISO Technical Specifications (TSs) into account.
+The aim is to help C++ programmers to write simpler, more efficient, more maintainable code.
 
-简介:
+Introduction summary:
 
-* [目标读者](#SS-readers)
-* [目标](#SS-aims)
+* [In.target: Target readership](#SS-readers)
+* [In.aims: Aims](#SS-aims)
 * [In.not: Non-aims](#SS-non)
-* [In.强制: 强制](#SS-force)
-* [In.结构: 文档结构](#SS-struct)
-* [In.sec: 主要部分](#SS-sec)
+* [In.force: Enforcement](#SS-force)
+* [In.struct: The structure of this document](#SS-struct)
+* [In.sec: Major sections](#SS-sec)
 
-## <a name="SS-readers"></a>目标读者
+## <a name="SS-readers"></a>In.target: Target readership
 
-所有的C++编程人员，包括[可能会考虑C的程序员](#S-cpl)。
+All C++ programmers. This includes [programmers who might consider C](#S-cpl).
 
-## <a name="SS-aims"></a>目标
+## <a name="SS-aims"></a>In.aims: Aims
 
-本文档的目的是为了帮助开发者使用现代C++（目前C++17）和在不同代码库之间达成更为统一的风格。
+The purpose of this document is to help developers to adopt modern C++ (currently C++17) and to achieve a more uniform style across code bases.
 
-不要产生每条规则都可以有效地适用每个代码库的错觉，旧有的代码库很难升级，但我们相信使用规则的程序更不易于出错，更具可维护性，通常规则也使得初始开发更加快速和容易。至少我们可以说，这些规则可以让代码性能至少像古老的甚至更传统的技术一样好，或者更优秀。使用这些零开销的原则（”不使用，不花钱“，或者当你适当地使用抽象机制时，至少可以获得与使用低级语言结构手工编码时一样好的性能）。这些规则是新代码的理想规则，在处理旧代码是这发挥的机会，尽可以地接近这些理想的规则。
+We do not suffer the delusion that every one of these rules can be effectively applied to every code base. Upgrading old systems is hard. However, we do believe that a program that uses a rule is less error-prone and more maintainable than one that does not. Often, rules also lead to faster/easier initial development.
+As far as we can tell, these rules lead to code that performs as well or better than older, more conventional techniques; they are meant to follow the zero-overhead principle ("what you don't use, you don't pay for" or "when you use an abstraction mechanism appropriately, you get at least as good performance as if you had handcoded using lower-level language constructs").
+Consider these rules ideals for new code, opportunities to exploit when working on older code, and try to approximate these ideals as closely as feasible.
+Remember:
 
-### <a name="R0"></a>别慌
+### <a name="R0"></a>In.0: Don't panic!
 
-花点时间来理解指引规则对您程序的意义。
+Take the time to understand the implications of a guideline rule on your program.
 
-这些指南遵循“超集的子集”这一原则[Stroustrup05](#Stroustrup05)，它们并非简单的定义一个C++的子集来使用（为了可靠性，安全性，性能或者其它什么），相反，它们强烈推荐使用一些简单的“扩展”([库组件](#S-gsl))，这使得使用c++中最容易出错的特性变得多余，因此它们可以被禁止(在我们的规则集中)。
+These guidelines are designed according to the "subset of superset" principle ([Stroustrup05](#Stroustrup05)).
+They do not simply define a subset of C++ to be used (for reliability, safety, performance, or whatever).
+Instead, they strongly recommend the use of a few simple "extensions" ([library components](#S-gsl))
+that make the use of the most error-prone features of C++ redundant, so that they can be banned (in our set of rules).
 
-规则强调静态类型安全性和资源安全性。
-因此，他们强调范围检查的可能性，避免取消对“nullptr”的引用，避免悬空指针，以及系统地使用异常(通过RAII)。
-部分是为了实现这一点，部分是为了将晦涩的代码作为错误的来源最小化，规则还强调了简单性和在良好指定的接口后面隐藏必要的复杂性。
+The rules emphasize static type safety and resource safety.
+For that reason, they emphasize possibilities for range checking, for avoiding dereferencing `nullptr`, for avoiding dangling pointers, and the systematic use of exceptions (via RAII).
+Partly to achieve that and partly to minimize obscure code as a source of errors, the rules also emphasize simplicity and the hiding of necessary complexity behind well-specified interfaces.
 
-这些规则强化了静态类型安全和资源安全，因此它们强调了范围检查的可能性，避免对‘nullptr’进行解引用，避免悬垂指针，以及系统地使用异常（通过RAII）。部分是为了实现这一点，部分是为了将晦涩的代码作为错误的来源最小化，规则还强调了简单性和在良好指定的接口后面隐藏必要的复杂性。
+Many of the rules are prescriptive.
+We are uncomfortable with rules that simply state "don't do that!" without offering an alternative.
+One consequence of that is that some rules can be supported only by heuristics, rather than precise and mechanically verifiable checks.
+Other rules articulate general principles. For these more general rules, more detailed and specific rules provide partial checking.
 
-许多规则都是规范性的。
-我们对那些只说“不要那样做!”而不提供其他选择的规则感到不舒服。
-这样做的一个结果是，某些规则只能由启发式来支持，而不能由精确且可自动验证的检查来支持。
-其他规则阐明了一般原则，对于这些更通用，更详细和具体的规则则提供部分检查。
+These guidelines address the core of C++ and its use.
+We expect that most large organizations, specific application areas, and even large projects will need further rules, possibly further restrictions, and further library support.
+For example, hard-real-time programmers typically can't use free store (dynamic memory) freely and will be restricted in their choice of libraries.
+We encourage the development of such more specific rules as addenda to these core guidelines.
+Build your ideal small foundation library and use that, rather than lowering your level of programming to glorified assembly code.
 
-这些指南指出了C++的核心及作用，我们期望大型组织，特定的应用领域，甚至大的项目需要更多的规则，或许是更多的限制和更多的库支持。例如，硬（件）实时程序通常不能使用自由地自由存储（动态内存），并且限度库的使用选择。我们鼓励制定更为特定的规则，作为这些核心指南的补充。构建您理想的小型基础库并使用它，而不是使用更低层次的美化汇编代码。
+The rules are designed to allow [gradual adoption](#S-modernizing).
 
-这些规则设计初衷允许[逐步适配](#S-modernizing).
+Some rules aim to increase various forms of safety while others aim to reduce the likelihood of accidents, many do both.
+The guidelines aimed at preventing accidents often ban perfectly legal C++.
+However, when there are two ways of expressing an idea and one has shown itself a common source of errors and the other has not, we try to guide programmers towards the latter.
 
-一些规则旨在增加各种形式的安全性，而另一些旨在减少事故的可能性，许多两者兼而有之。
-旨在防止事故发生的指导方针常常禁止完全合法的c++。
-然而，当有两种表达思想的方法时，一种方法显示出常见的错误来源，而另一种方法没有，我们试图引导程序员使用后者。
-
-## <a name="SS-non"></a>非目标
+## <a name="SS-non"></a>In.not: Non-aims
 
 The rules are not intended to be minimal or orthogonal.
 In particular, general rules can be simple, but unenforceable.
@@ -391,20 +422,20 @@ Recommended information sources can be found in [the references](#S-references).
 * [SF: Source files](#S-source)
 * [SL: The Standard Library](#S-stdlib)
 
-辅助部分:
+Supporting sections:
 
-* [A: 架构思想](#S-A)
+* [A: Architectural ideas](#S-A)
 * [NR: Non-Rules and myths](#S-not)
-* [RF: 引用](#S-references)
+* [RF: References](#S-references)
 * [Pro: Profiles](#S-profile)
-* [GSL: 指南库](#S-gsl)
-* [NL: 命名和布局规则](#S-naming)
-* [FAQ: 常见问题解答](#S-faq)
-* [附录 A: 库](#S-libraries)
-* [附录 B: 现代化的代码](#S-modernizing)
-* [附录 C: 讨论](#S-discussion)
-* [附录 D: 支持工具](#S-tools)
-* [术语](#S-glossary)
+* [GSL: Guidelines support library](#S-gsl)
+* [NL: Naming and layout rules](#S-naming)
+* [FAQ: Answers to frequently asked questions](#S-faq)
+* [Appendix A: Libraries](#S-libraries)
+* [Appendix B: Modernizing code](#S-modernizing)
+* [Appendix C: Discussion](#S-discussion)
+* [Appendix D: Supporting tools](#S-tools)
+* [Glossary](#S-glossary)
 * [To-do: Unclassified proto-rules](#S-unclassified)
 
 These sections are not orthogonal.
