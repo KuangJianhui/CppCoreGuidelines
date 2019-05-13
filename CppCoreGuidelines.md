@@ -652,53 +652,52 @@ Unfortunately, that is not possible. Problem areas:
     if (bits < 32)
         cerr << "Int too small\n";
 
-这个例子无法获取想要的效果（因为溢出是未定义的），应当被替换成使用`static_assert`:
-This example fails to achieve what it is trying to achieve (because overflow is undefined) and should be replaced with a simple `static_assert`:
+这个例子无法获取想要的效果（因为溢出是未定义的），应当被替换成使用简单的`static_assert`:
 
     // Int is an alias used for integers
     static_assert(sizeof(Int) >= 4);    // do: compile-time check
 
-Or better still just use the type system and replace `Int` with `int32_t`.
+或者更好地使用类型系统，以及使用`int32_t`来替换`int`。
 
-##### Example
+##### 例子
 
-    void read(int* p, int n);   // read max n integers into *p
+    void read(int* p, int n);   // 读取n个整数到*p
 
     int a[100];
     read(a, 1000);    // bad, off the end
 
-better
+更好的做法：
 
     void read(span<int> r); // read into the range of integers r
 
     int a[100];
-    read(a);        // better: let the compiler figure out the number of elements
+    read(a);        // 好处: 让编译器计算出元素的个数
 
-**Alternative formulation**: Don't postpone to run time what can be done well at compile time.
+**替代方案**: 不要将可以在编译时做好的事情推迟到运行时做。
 
-##### Enforcement
+##### 执行
 
-* Look for pointer arguments.
-* Look for run-time checks for range violations.
+* 寻找指针类型的参数。
+* 寻找运行时的范围越界检查。
 
-### <a name="Rp-run-time"></a>P.6: What cannot be checked at compile time should be checkable at run time
+### <a name="Rp-run-time"></a>P.6: 编译时无法做的检查应当在运行时做
 
-##### Reason
+##### 原因
 
-Leaving hard-to-detect errors in a program is asking for crashes and bad results.
+留下难以检测的错误在程序中会导致崩溃和糟糕的结果。
 
 ##### Note
 
-Ideally, we catch all errors (that are not errors in the programmer's logic) at either compile time or run time. It is impossible to catch all errors at compile time and often not affordable to catch all remaining errors at run time. However, we should endeavor to write programs that in principle can be checked, given sufficient resources (analysis programs, run-time checks, machine resources, time).
+理想情况下我们在编译时或运行时捕获所有的错误（非程序员的逻辑错误），不可能在编译时捕获所有的错误，通常也不值得在运行捕获所有剩余的错误，然而我应当尽力编写在给定充足资源（分析程序，运行时检查，机器资源，时间等）的情况下原则上可以被检查的代码。
 
-##### Example, bad
+##### 糟糕的例子
 
-    // separately compiled, possibly dynamically loaded
+    // 分开编译，可能会动态加载
     extern void f(int* p);
 
     void g(int n)
     {
-        // bad: the number of elements is not passed to f()
+        // 糟糕: 元素的数量没有传递给 f()
         f(new int[n]);
     }
 
