@@ -537,18 +537,17 @@ portability will be impacted.
 
 ##### 注意
 
-There are environments where restrictions on use of standard C++ language or library features are necessary, e.g., to avoid dynamic memory allocation as required by aircraft control software standards.
-In such cases, control their (dis)use with an extension of these Coding Guidelines customized to the specific environment.
+在某些环境中，限制条件在使用标准c++或库特性时是必要的，例如，在飞机控制软件标准要求避免使用动态内存分配。在这种特殊情况下，控制它们使用（或不使用）这些编码指南的扩展。
 
-##### Enforcement
+##### 强制执行
 
-Use an up-to-date C++ compiler (currently C++17, C++14, or C++11) with a set of options that do not accept extensions.
+使用一组最新的不接受扩展选项的C++编译器（目前C++17, C++14，或C++11）。
 
-### <a name="Rp-what"></a>P.3: Express intent
+### <a name="Rp-what"></a>P.3: 表达意图
 
-##### Reason
+##### 原因
 
-Unless the intent of some code is stated (e.g., in names or comments), it is impossible to tell whether the code does what it is supposed to do.
+除非一代码的意图被注明（例如，名字或注释），否则不可能判断代码是否做了它被猜测做的事。
 
 ##### Example
 
@@ -557,103 +556,103 @@ Unless the intent of some code is stated (e.g., in names or comments), it is imp
         // ... do something with v[i] ...
     }
 
-The intent of "just" looping over the elements of `v` is not expressed here. The implementation detail of an index is exposed (so that it might be misused), and `i` outlives the scope of the loop, which may or may not be intended. The reader cannot know from just this section of code.
+这里并没有表达仅仅遍历`v`的意图，`index`的实现细节被公开（所以可能被误用）。`i`的生命周期有意无意的超过了循环本身，读者无法仅仅从这段代码做出判断。
 
-Better:
+更好的做法:
 
     for (const auto& x : v) { /* do something with the value of x */ }
 
-Now, there is no explicit mention of the iteration mechanism, and the loop operates on a reference to `const` elements so that accidental modification cannot happen. If modification is desired, say so:
+现在没有显示地提到迭代机制，在`const`引用上的循环操作可以避免无意的改动，如果希望修改，这样写：
 
     for (auto& x : v) { /* modify x */ }
 
-For more details about for-statements, see [ES.71](#Res-for-range).
-Sometimes better still, use a named algorithm. This example uses the `for_each` from the Ranges TS because it directly expresses the intent:
+更多for语句的细节见[ES.71](#Res-for-range)，有时使用具名算法会更好，这里使用了`Ranges TS`中的`for_each`，直接表达了意图：
 
     for_each(v, [](int x) { /* do something with the value of x */ });
     for_each(par, v, [](int x) { /* do something with the value of x */ });
 
-The last variant makes it clear that we are not interested in the order in which the elements of `v` are handled.
+最后一种变体明确表明我们对要处理的`v`的元素的顺序不感兴趣。
 
-A programmer should be familiar with
+程序需要熟悉这些
 
-* [The guidelines support library](#S-gsl)
-* [The ISO C++ Standard Library](#S-stdlib)
-* Whatever foundation libraries are used for the current project(s)
+* [指南支持库(gsl)](#S-gsl)
+* [C++标准库](#S-stdlib)
+* 当前项目使用的任意基础库
 
-##### Note
+##### 注意
 
-Alternative formulation: Say what should be done, rather than just how it should be done.
+替代方案:说应该做什么，而不仅仅是应该怎么做。
 
-##### Note
+##### 注意
 
-Some language constructs express intent better than others.
+一些语言结构比另一些更好地表达意图。
 
-##### Example
+##### 例子
 
-If two `int`s are meant to be the coordinates of a 2D point, say so:
+如果两个`int'指的是一个2D点的坐标，就这样写：
 
-    draw_line(int, int, int, int);  // obscure
-    draw_line(Point, Point);        // clearer
+    draw_line(int, int, int, int);  // 晦涩
+    draw_line(Point, Point);        // 清晰
 
-##### Enforcement
 
-Look for common patterns for which there are better alternatives
+##### 强制执行
 
-* simple `for` loops vs. range-`for` loops
-* `f(T*, int)` interfaces vs. `f(span<T>)` interfaces
-* loop variables in too large a scope
-* naked `new` and `delete`
-* functions with many parameters of built-in types
+寻找有更好替代方案的常见模式
 
-There is a huge scope for cleverness and semi-automated program transformation.
+* 简单的`for`循环 vs. 基于Range的`for`循环
+* `f(T*, int)` 接口 vs. `f(span<T>)` 接口
+* 太大范围的循环变量
+* 裸露的 `new` 和 `delete`
+* 太多内置类型参数的函数
 
-### <a name="Rp-typesafe"></a>P.4: Ideally, a program should be statically type safe
+这给了智能和半自动程序转换的巨大空间。
 
-##### Reason
+### <a name="Rp-typesafe"></a>P.4: 理想情况下，程序应当是静态类型安全的
+
+##### 原因
 
 Ideally, a program would be completely statically (compile-time) type safe.
 Unfortunately, that is not possible. Problem areas:
 
-* unions
-* casts
-* array decay
-* range errors
-* narrowing conversions
+理想情况下，程序应该完全静态（编译时）类型安全的，然而不幸的是，这是不可能的，有这些问题
 
-##### Note
+* 联合体
+* 强制类型转换
+* 数组衰退（decay）
+* 范围错误
+* 收缩转换（float -> int）
 
-These areas are sources of serious problems (e.g., crashes and security violations).
-We try to provide alternative techniques.
+##### 注意
 
-##### Enforcement
+这些都是严重问题的根源（例如，crash和安全性问题），我们会尝试提供替代技术。
 
-We can ban, restrain, or detect the individual problem categories separately, as required and feasible for individual programs.
-Always suggest an alternative.
-For example:
+##### 强制
 
-* unions -- use `variant` (in C++17)
-* casts -- minimize their use; templates can help
-* array decay -- use `span` (from the GSL)
-* range errors -- use `span`
-* narrowing conversions -- minimize their use and use `narrow` or `narrow_cast` (from the GSL) where they are necessary
 
-### <a name="Rp-compile-time"></a>P.5: Prefer compile-time checking to run-time checking
+我们可以根据个别程序的需求和可行性分别禁止、限制或检测个别问题类别。总会建议一种替代方案，例如：
 
-##### Reason
+* 联合体 -- 使用 `variant` (C++17)
+* 强制类型转换 -- 最小化使用它们; 使用template来获取帮助
+* 数组衰退 -- 使用 `span` (来自GSL)
+* 范围错误 -- 使用 `span`
+* 收缩转换 -- 最小化使用它们；当需要时，使用`narrow`或者`narrow_cast` (GSL)
 
-Code clarity and performance.
-You don't need to write error handlers for errors caught at compile time.
+### <a name="Rp-compile-time"></a>P.5: 优先编译时检查而不是运行时检查
+
+##### 原因
+
+代码清晰而高效，无需要为编译时错误而编写错误处理程序。
 
 ##### Example
 
-    // Int is an alias used for integers
+    // Int 是整型的别名
     int bits = 0;         // don't: avoidable code
     for (Int i = 1; i; i <<= 1)
         ++bits;
     if (bits < 32)
         cerr << "Int too small\n";
 
+这个例子无法获取想要的效果（因为溢出是未定义的），应当被替换成使用`static_assert`:
 This example fails to achieve what it is trying to achieve (because overflow is undefined) and should be replaced with a simple `static_assert`:
 
     // Int is an alias used for integers
