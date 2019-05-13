@@ -436,14 +436,13 @@ Philosophical rules are generally not mechanically checkable.
 However, individual rules reflecting these philosophical themes are.
 Without a philosophical basis, the more concrete/specific/checkable rules lack rationale.
 
-### <a name="Rp-direct"></a>P.1: Express ideas directly in code
+### <a name="Rp-direct"></a>P.1: 代码中直接表明意图
 
-##### Reason
+##### 原因
 
-Compilers don't read comments (or design documents) and neither do many programmers (consistently).
-What is expressed in code has defined semantics and can (in principle) be checked by compilers and other tools.
+编译器不会读取注释（或者设计文档），相应地很多程序员也不会读。代码中表达的确定性语义原则上可以使用编译器或者其它工具进行检查。
 
-##### Example
+##### 例子
 
     class Date {
         // ...
@@ -453,12 +452,12 @@ What is expressed in code has defined semantics and can (in principle) be checke
         // ...
     };
 
-The first declaration of `month` is explicit about returning a `Month` and about not modifying the state of the `Date` object.
-The second version leaves the reader guessing and opens more possibilities for uncaught bugs.
+第一个‘month’的声明明确返回一个‘month’，并且不会修改‘Date’对象的状态，而第二个则让读者去猜测，并为未捕获的bug提供了更多的可能性。
 
-##### Example, bad
+##### 糟糕的例子
 
-This loop is a restricted form of `std::find`:
+该循环是`std::find`的受限形式：
+
 
     void f(vector<string>& v)
     {
@@ -475,9 +474,9 @@ This loop is a restricted form of `std::find`:
         // ...
     }
 
-##### Example, good
+##### 好的例子
 
-A much clearer expression of intent would be:
+更清晰地表达意图：
 
     void f(vector<string>& v)
     {
@@ -488,46 +487,42 @@ A much clearer expression of intent would be:
         // ...
     }
 
-A well-designed library expresses intent (what is to be done, rather than just how something is being done) far better than direct use of language features.
+一个设计良好的库表达的意图（将要做什么，而不仅仅是做了什么）远好于直接使用语言特性。
 
-A C++ programmer should know the basics of the standard library, and use it where appropriate.
-Any programmer should know the basics of the foundation libraries of the project being worked on, and use them appropriately.
-Any programmer using these guidelines should know the [guidelines support library](#S-gsl), and use it appropriately.
+c++程序员应该了解标准库的基础知识，并在适当的地方使用它，任何程序员都应该了解并适当使用正在处理的项目的基础库的基础，任何使用这些指南的程序员都应该知道[指南支持库](#S-gsl)，并正确地使用它。
 
-##### Example
+##### 例子
 
-    change_speed(double s);   // bad: what does s signify?
+    change_speed(double s);   // 糟糕: s指什么?
     // ...
     change_speed(2.3);
 
-A better approach is to be explicit about the meaning of the double (new speed or delta on old speed?) and the unit used:
+更好的方法是明确double和单位的意义（新速度，或旧速度`差值`？）
 
-    change_speed(Speed s);    // better: the meaning of s is specified
+    change_speed(Speed s);    // 好的: 指出的s的意图
     // ...
-    change_speed(2.3);        // error: no unit
-    change_speed(23m / 10s);  // meters per second
+    change_speed(2.3);        // 错误: 没有单位
+    change_speed(23m / 10s);  // 米/秒
 
-We could have accepted a plain (unit-less) `double` as a delta, but that would have been error-prone.
-If we wanted both absolute speed and deltas, we would have defined a `Delta` type.
+我们可以接受仅仅（无单位）使用`double`作为差值，但这将会易于出错。如果我们想要绝对速度和差值，可以定义一个`Delta`类型。
 
-##### Enforcement
+##### 强制
 
-Very hard in general.
+通常很难
 
-* use `const` consistently (check if member functions modify their object; check if functions modify arguments passed by pointer or reference)
-* flag uses of casts (casts neuter the type system)
-* detect code that mimics the standard library (hard)
+* 始终使用`const`(检查成员函数是否修改它们的对象；检查函数是否修改了以指针或引用传递的参数)
+* 使用强制类型转换标记（casts neuter the type system）
+* 检测模仿了标准库的代码（很难）
 
-### <a name="Rp-Cplusplus"></a>P.2: Write in ISO Standard C++
+### <a name="Rp-Cplusplus"></a>P.2: 使用符合IOS标准的C++
 
-##### Reason
+##### 原因
 
-This is a set of guidelines for writing ISO Standard C++.
+这是一个写符合IOS标准的C++的指南。
 
-##### Note
+##### 注意
 
-There are environments where extensions are necessary, e.g., to access system resources.
-In such cases, localize the use of necessary extensions and control their use with non-core Coding Guidelines.  If possible, build interfaces that encapsulate the extensions so they can be turned off or compiled away on systems that do not support those extensions.
+有些情况下扩展是必须的，例如访问系统资源，在这种情况下，本地化必要扩展的使用，并使用非核心编码准则控制它们。如果可能，构建扩展的接口的封装，以便在不支持这些扩展的系统上关闭或编译它们。
 
 Extensions often do not have rigorously defined semantics.  Even extensions that
 are common and implemented by multiple compilers may have slightly different
@@ -535,13 +530,12 @@ behaviors and edge case behavior as a direct result of *not* having a rigorous
 standard definition.  With sufficient use of any such extension, expected
 portability will be impacted.
 
-##### Note
 
-Using valid ISO C++ does not guarantee portability (let alone correctness).
-Avoid dependence on undefined behavior (e.g., [undefined order of evaluation](#Res-order))
-and be aware of constructs with implementation defined meaning (e.g., `sizeof(int)`).
+##### 注意
 
-##### Note
+使用合法的IOS C++并不能保证可移植性（更不用说正确性），避免依赖不确定的行为(例如, [未定义的求值顺序](#Res-order))，注意由实现（`implementation`）来定义意义的构造（例如，`sizeof(int)`）。
+
+##### 注意
 
 There are environments where restrictions on use of standard C++ language or library features are necessary, e.g., to avoid dynamic memory allocation as required by aircraft control software standards.
 In such cases, control their (dis)use with an extension of these Coding Guidelines customized to the specific environment.
