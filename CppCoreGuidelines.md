@@ -506,7 +506,7 @@ c++程序员应该了解标准库的基础知识，并在适当的地方使用�
 
 我们可以接受仅仅（无单位）使用`double`作为差值，但这将会易于出错。如果我们想要绝对速度和差值，可以定义一个`Delta`类型。
 
-##### 强制
+##### 实施
 
 通常很难
 
@@ -611,9 +611,6 @@ portability will be impacted.
 
 ##### 原因
 
-Ideally, a program would be completely statically (compile-time) type safe.
-Unfortunately, that is not possible. Problem areas:
-
 理想情况下，程序应该完全静态（编译时）类型安全的，然而不幸的是，这是不可能的，有这些问题
 
 * 联合体
@@ -626,7 +623,7 @@ Unfortunately, that is not possible. Problem areas:
 
 这些都是严重问题的根源（例如，crash和安全性问题），我们会尝试提供替代技术。
 
-##### 强制
+##### 实施
 
 
 我们可以根据个别程序的需求和可行性分别禁止、限制或检测个别问题类别。总会建议一种替代方案，例如：
@@ -688,7 +685,7 @@ Unfortunately, that is not possible. Problem areas:
 
 ##### Note
 
-理想情况下我们在编译时或运行时捕获所有的错误（非程序员的逻辑错误），不可能在编译时捕获所有的错误，通常也不值得在运行捕获所有剩余的错误，然而我应当尽力编写在给定充足资源（分析程序，运行时检查，机器资源，时间等）的情况下原则上可以被检查的代码。
+理想情况下我们在编译时或运行时捕获所有的错误（非程序员的逻辑错误），然而并不可能在编译时捕获所有的错误，通常也不值得在运行捕获所有剩余的错误，然而我应当尽力编写在给定充足资源（分析程序，运行时检查，机器资源，时间等）的情况下原则上可以被检查的代码。
 
 ##### 糟糕的例子
 
@@ -701,59 +698,58 @@ Unfortunately, that is not possible. Problem areas:
         f(new int[n]);
     }
 
-Here, a crucial bit of information (the number of elements) has been so thoroughly "obscured" that static analysis is probably rendered infeasible and dynamic checking can be very difficult when `f()` is part of an ABI so that we cannot "instrument" that pointer. We could embed helpful information into the free store, but that requires global changes to a system and maybe to the compiler. What we have here is a design that makes error detection very hard.
+在这里，元素的数量这一个关键信息被彻底“模糊”了，以至于静态分析可能变得不再可行，当“f()”是ABI的一部分时可能会让动态检查非常困难，以至于不能“检测”这个指针。我在免费存储中嵌入有用的信息，但这需要对系统进行全局更改，也许还需要对编译器进行更改，这样的设计使得错误检测非常困难。
 
-##### Example, bad
+##### 糟糕的例子
 
-We can of course pass the number of elements along with the pointer:
+当然，我们也可以将无数的数据随指针一起传进去：
 
     // separately compiled, possibly dynamically loaded
     extern void f2(int* p, int n);
 
     void g2(int n)
     {
-        f2(new int[n], m);  // bad: a wrong number of elements can be passed to f()
+        f2(new int[n], m);  // 糟糕：可能会将错误的无数数量传给f()
     }
 
-Passing the number of elements as an argument is better (and far more common) than just passing the pointer and relying on some (unstated) convention for knowing or discovering the number of elements. However (as shown), a simple typo can introduce a serious error. The connection between the two arguments of `f2()` is conventional, rather than explicit.
+将元素的数量作为参数传递要比仅仅传递指针并依赖某种(未声明的)约定来了解或发现元素的数量更好(而且更常见)。然而(如所示)，一个简单的拼写错误可能会导致严重的错误。`f2()`的两个参数之间的联系是习惯性的，而不是显式的。
 
-Also, it is implicit that `f2()` is supposed to `delete` its argument (or did the caller make a second mistake?).
+同样，它也暗示着`f2()`支持`delete`它的参数（或者，这是调用者犯的第二个错误？）。
 
-##### Example, bad
 
-The standard library resource management pointers fail to pass the size when they point to an object:
+##### 糟糕的例子
 
-    // separately compiled, possibly dynamically loaded
-    // NB: this assumes the calling code is ABI-compatible, using a
-    // compatible C++ compiler and the same stdlib implementation
+标准库的资源管理指针指向对象时也无法传递大小：
+
+    // 分开编译，可能动态加载
+    // NB: 假设这里的调用代码是 ABI-兼容的， 使用兼容的C++编译器以及相同的stdlib实现
     extern void f3(unique_ptr<int[]>, int n);
 
     void g3(int n)
     {
-        f3(make_unique<int[]>(n), m);    // bad: pass ownership and size separately
+        f3(make_unique<int[]>(n), m);    // 糟糕: 分开传递所有权和大小
     }
 
 ##### Example
 
-We need to pass the pointer and the number of elements as an integral object:
+我们需要将指针和元素个数作为一个整体对象进行传递:
 
-    extern void f4(vector<int>&);   // separately compiled, possibly dynamically loaded
-    extern void f4(span<int>);      // separately compiled, possibly dynamically loaded
-                                    // NB: this assumes the calling code is ABI-compatible, using a
-                                    // compatible C++ compiler and the same stdlib implementation
+    extern void f4(vector<int>&);   // 分开编译，可能动态加载
+    extern void f4(span<int>);      // 分开编译，可能动态加载
+                                    // NB: 假设这里的调用代码是 ABI-兼容的， 使用兼容的C++编译器以及相同的stdlib实现
 
     void g3(int n)
     {
         vector<int> v(n);
-        f4(v);                     // pass a reference, retain ownership
-        f4(span<int>{v});          // pass a view, retain ownership
+        f4(v);                     // 传递一个引用，保留所有权(ownership)
+        f4(span<int>{v});          // 传递一个视图(view)，保留所有权
     }
 
-This design carries the number of elements along as an integral part of an object, so that errors are unlikely and dynamic (run-time) checking is always feasible, if not always affordable.
+这种设计将元素的数量作为对象的一个组成部分，这样错误就不太可能发生，如果条件允许，动态(运行时)检查也是可行的。
 
 ##### Example
 
-How do we transfer both ownership and all information needed for validating use?
+我们如何同时传递所有权和验证所需的所有信息?
 
     vector<int> f5(int n)    // OK: move
     {
