@@ -1,49 +1,36 @@
-[![C++ Core Guidelines](cpp_core_guidelines_logo_text.png)](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)
+[![C++核心指南](cpp_core_guidelines_logo_text.png)](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)
 
 >"Within C++ is a smaller, simpler, safer language struggling to get out."
->-- <cite>Bjarne Stroustrup</cite>
+>-- <cite>本贾尼·斯特劳斯特卢普</cite>
 
-The [C++ Core Guidelines](CppCoreGuidelines.md) are a collaborative effort led by Bjarne Stroustrup, much like the C++ language itself. They are the result of many
-person-years of discussion and design across a number of organizations. Their design encourages general applicability and broad adoption but
-they can be freely copied and modified to meet your organization's needs.
+[C++核心指南](CppCoreGuidelines.md) 像C++一样是在本贾尼·斯特劳斯特卢普的领导下共同努力的成果，也是是多个组织进行多年讨论和设计的成果。它们的设计鼓励通用性和广泛采用，但是可以自由地复制和修改它们，以满足组织的需要。
 
-## Getting started
+## 开始
 
-The guidelines themselves are found at [CppCoreGuidelines](CppCoreGuidelines.md). The document is in [GH-flavored MarkDown](https://github.github.com/gfm/). It is intentionally kept simple, mostly in ASCII, to allow automatic post-processing such as language translation and reformatting. The editors maintain one
-[version formatted for browsing](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines). Note that it is manually integrated and can be slightly older than the version in the master branch.
+这些指南可以在[CppCoreGuidelines](CppCoreGuidelines.md)中找到，该文档使用[GH风格的MarkDown](https://github.github.com/gfm/)。该指南刻意保持简单，主要使用ASCII以便允许自动化后处理，如语言翻译和重新格式化。编者们维护了一个[用于浏览格式的版本](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)，由于它是手工集成的，所以可能比主分支中的版本稍微老一些。
 
-The Guidelines are a constantly evolving document without a strict "release" cadence. Bjarne Stroustrup periodically reviews the document and increments the version number in the introduction. [Checkins that increment the version number](https://github.com/isocpp/CppCoreGuidelines/releases) are tagged in git. 
+该指南是一个不断发展的文档，没有严格的“发布”节奏，本贾尼·斯特劳斯特卢普会定期审查该文档以及在介绍中增加版本号，并在git中标出了[增长版本号的签入](https://github.com/isocpp/CppCoreGuidelines/releases) 。
 
-Many of the guidelines make use of the header-only Guidelines Support Library. One implementation is available at [GSL: Guidelines Support Library](https://github.com/Microsoft/GSL).
+很多指南使用了仅含有头文件的“指南支持库”，[GSL:指南支持库](https://github.com/Microsoft/GSL)是其中一个可用的实现。
 
-## Background and scope
+## 背景和范围
 
-The aim of the guidelines is to help people to use modern C++ effectively. By "modern C++" we mean C++11, C++14, and C++17. In other
-words, what would you like your code to look like in 5 years' time, given that you can start now? In 10 years' time?
+该指南的目的是帮助人们有效地使用现代C++。“现代C++”指的是c++11、c++14和c++17。换句话说，您希望5年后您的代码是什么样子的？10年后呢？现在开始吧。
 
-The guidelines are focused on relatively higher-level issues, such as interfaces, resource management, memory management, and concurrency. Such
-rules affect application architecture and library design. Following the rules will lead to code that is statically type-safe, has no resource
-leaks, and catches many more programming logic errors than is common in code today. And it will run fast -- you can afford to do things right.
+该指南聚焦于相对高层次的问题，例如接口，资源管理，内存管理以及并发等，这些规则影响于应用架构和库的设计，相对于现今常用的规范，使用这些规则可以让代码静态类型安全，无资源泄漏，捕获更多的编程逻辑错误，并且可以让代码运行的更快，总之，值得您去做这些事情。
 
-We are less concerned with low-level issues, such as naming conventions and indentation style. However, no topic that can help a programmer is
-out of bounds.
+我们不太关注底层问题，如命名规范和对齐风格。然而，无用的废话是越线的。
 
-Our initial set of rules emphasizes safety (of various forms) and simplicity. They may very well be too strict. We expect to have to introduce
-more exceptions to better accommodate real-world needs. We also need more rules.
+我们最初的规则集合强化的安全性（多种形式）和简洁性，它们可以会太严格，希望没有引入更多的异常来适应现实的需求，但我们需要更多的规则。
 
-You will find some of the rules contrary to your expectations or even contrary to your experience. If we haven't suggested that you change your
-coding style in any way, we have failed! Please try to verify or disprove rules! In particular, we'd really like to have some of our rules
-backed up with measurements or better examples.
+您将会发现一些规则会违背您的预期，甚至违背您过往经历，如果我们不能用任何方式说服您改变您的编程风格，那么我们就失败了！请尝试来验证或否定这些规则。我们尤其希望能有一些测试或更好的案例来支持我们的规则。
 
-You will find some of the rules obvious or even trivial. Please remember that one purpose of a guideline is to help someone who is less
-experienced or coming from a different background or language to get up to speed.
+您也发现一些明显的甚至琐碎的规则，请记住我们指南的目的是为了帮助那些缺乏经验的，其它语言转移过来的，或者需要来提升该语言的人。
 
-The rules are designed to be supported by an analysis tool. Violations of rules will be flagged with references (or links) to the relevant rule.
-We do not expect you to memorize all the rules before trying to write code.
+大多的规则被设计成可以被分析工具来支持，违反的规则被标记出（链接）到相应的规则。我们不希望您在写代码之前记住所有的规则，一种理解是可以把该文档当成碰巧可以被阅读的（分析）工具的说明书。
 
-The rules are meant for gradual introduction into a code base. We plan to build tools for that and hope others will too.
+这些规则用于逐步引入代码库，我们计划为此开发工具，并希望其他人也能这样做。
 
-## Contributions and LICENSE
+## 贡献和许可证(LICENSE)
 
-Comments and suggestions for improvements are most welcome. We plan to modify and extend this document as our understanding improves and the
-language and the set of available libraries improve. More details are found at [CONTRIBUTING](./CONTRIBUTING.md) and [LICENSE](./LICENSE).
+欢迎对改进提出意见和建议，随着我们对该文档的理解提高，以及语言和可用库集的改进，我们计划修改和扩展该文档。更多细节参见[贡献](./CONTRIBUTING.md) 和[LICENSE](./LICENSE)。
