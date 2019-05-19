@@ -1,6 +1,6 @@
 [![C++核心指南](cpp_core_guidelines_logo_text.png)](http://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines)
 
->"Within C++ is a smaller, simpler, safer language struggling to get out."
+>"在c++内部是一种更小、更简单、更安全的语言。"
 >-- <cite>本贾尼·斯特劳斯特卢普</cite>
 
 [C++核心指南](CppCoreGuidelines.md) 像C++一样是在本贾尼·斯特劳斯特卢普的领导下共同努力的成果，也是是多个组织进行多年讨论和设计的成果。它们的设计鼓励通用性和广泛采用，但是可以自由地复制和修改它们，以满足组织的需要。
