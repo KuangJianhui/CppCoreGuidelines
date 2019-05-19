@@ -595,7 +595,7 @@ portability will be impacted.
     draw_line(Point, Point);        // 清晰
 
 
-##### 强制执行
+##### 实施
 
 寻找有更好替代方案的常见模式
 
@@ -758,14 +758,14 @@ portability will be impacted.
         return v;
     }
 
-    unique_ptr<int[]> f6(int n)    // bad: loses n
+    unique_ptr<int[]> f6(int n)    // 糟糕: 丢失了`n`
     {
         auto p = make_unique<int[]>(n);
         // ... initialize *p ...
         return p;
     }
 
-    owner<int*> f7(int n)    // bad: loses n and we might forget to delete
+    owner<int*> f7(int n)    // 糟糕: 丢失了`n`，并且可能会忘记`delete`
     {
         owner<int*> p = new int[n];
         // ... initialize *p ...
@@ -780,19 +780,18 @@ portability will be impacted.
 
 ##### Enforcement
 
-* Flag (pointer, count)-style interfaces (this will flag a lot of examples that can't be fixed for compatibility reasons)
+* (指针，个数)类型的操口（这可以给出非常多的由于兼容性而无法修复的例子）
 * ???
 
 ### <a name="Rp-early"></a>P.7: Catch run-time errors early
 
 ##### Reason
 
-Avoid "mysterious" crashes.
-Avoid errors leading to (possibly unrecognized) wrong results.
+避免“神秘的”崩溃，避免由错误导致的（不可感知的）错误结果。
 
 ##### Example
 
-    void increment1(int* p, int n)    // bad: error-prone
+    void increment1(int* p, int n)    // 糟糕: 易于出错
     {
         for (int i = 0; i < n; ++i) ++p[i];
     }
@@ -802,8 +801,7 @@ Avoid errors leading to (possibly unrecognized) wrong results.
         const int n = 10;
         int a[n] = {};
         // ...
-        increment1(a, m);   // maybe typo, maybe m <= n is supposed
-                            // but assume that m == 20
+        increment1(a, m);   // 可能是拼写错误，或许m<=n是被支持的，但是假设 m==20
         // ...
     }
 
@@ -811,6 +809,8 @@ Here we made a small error in `use1` that will lead to corrupted data or a crash
 The (pointer, count)-style interface leaves `increment1()` with no realistic way of defending itself against out-of-range errors.
 If we could check subscripts for out of range access, then the error would not be discovered until `p[10]` was accessed.
 We could check earlier and improve the code:
+
+我们在`use1`中一个引起数据损坏或者崩溃的小错误，(指针，个数)样式的接口使得`increment1()`没有切实可行的方法来防止数组访问越界的问题。如果我们使用下标检查来防止越界访问，那么这个错误只有在`p[10]`被访问时才会被发现。我可以提前检查来改进代码：
 
     void increment2(span<int> p)
     {
@@ -822,31 +822,30 @@ We could check earlier and improve the code:
         const int n = 10;
         int a[n] = {};
         // ...
-        increment2({a, m});    // maybe typo, maybe m <= n is supposed
+        increment2({a, m});    // 可能是拼写错误，可能m< = n是被支持的
         // ...
     }
 
-Now, `m <= n` can be checked at the point of call (early) rather than later.
-If all we had was a typo so that we meant to use `n` as the bound, the code could be further simplified (eliminating the possibility of an error):
+现在，可以在调用点(早期)而不是稍后检查`m <= n`，如果仅有一个拼写错误，并打算使用`n`作为边界，那么代码可以更加简洁（消除错误的可能性）：
 
     void use3(int m)
     {
         const int n = 10;
         int a[n] = {};
         // ...
-        increment2(a);   // the number of elements of a need not be repeated
+        increment2(a);   // 元素的个数不需要重复
         // ...
     }
 
-##### Example, bad
+##### 糟糕的例子
 
-Don't repeatedly check the same value. Don't pass structured data as strings:
+不要重复检查同一个值，不要以字符串的形式传递结构化的数据：
 
-    Date read_date(istream& is);    // read date from istream
+    Date read_date(istream& is);    // 从istream中读取`date`
 
-    Date extract_date(const string& s);    // extract date from string
+    Date extract_date(const string& s);    // 从字符串的提取`date`
 
-    void user1(const string& date)    // manipulate date
+    void user1(const string& date)    // 操作`date`
     {
         auto d = extract_date(date);
         // ...
@@ -860,12 +859,11 @@ Don't repeatedly check the same value. Don't pass structured data as strings:
         // ...
     }
 
-The date is validated twice (by the `Date` constructor) and passed as a character string (unstructured data).
+date被做了两次的合法性验证（`Date`的构造函数），并以字符串(非结构化数据)的形式进行传递(参数)。
 
 ##### Example
 
-Excess checking can be costly.
-There are cases where checking early is dumb because you may not ever need the value, or may only need part of the value that is more easily checked than the whole.  Similarly, don't add validity checks that change the asymptotic behavior of your interface (e.g., don't add a `O(n)` check to an interface with an average complexity of `O(1)`).
+过多的检查可能是昂贵的。在某些情况下，提前检查是愚蠢的，因为您可能永远不需要该值，或者只需要检查比整个值更容易检查的部分。类似地，不要添加更改接口渐近行为的有效性检查(例如，不要将`O(n)`的检查添加到平均复杂度为`O(1)`的接口中)。
 
     class Jet {    // Physics says: e * e < x * x + y * y + z * z
         float x;
@@ -876,95 +874,86 @@ There are cases where checking early is dumb because you may not ever need the v
         Jet(float x, float y, float z, float e)
             :x(x), y(y), z(z), e(e)
         {
-            // Should I check here that the values are physically meaningful?
+            // 我应该检查这些值是具有实际(物理)意义的吗？
         }
 
         float m() const
         {
-            // Should I handle the degenerate case here?
+            // 我应该处理这种退化(简化)的情形吗？
             return sqrt(x * x + y * y + z * z - e * e);
         }
 
         ???
     };
 
-The physical law for a jet (`e * e < x * x + y * y + z * z`) is not an invariant because of the possibility for measurement errors.
+由于存在测量误差的可能性，(`e * e < x * x + y * y + z * z`)对于喷气式飞机的物理规律而言并不是不变的。
 
 ???
 
-##### Enforcement
+##### 实施
 
-* Look at pointers and arrays: Do range-checking early and not repeatedly
-* Look at conversions: Eliminate or mark narrowing conversions
-* Look for unchecked values coming from input
-* Look for structured data (objects of classes with invariants) being converted into strings
-* ???
+* 查看指针和数组：提前进行范围检查，并且不要重复检查
+* 查看转换：:消除或标记收缩转换
+* 查看输入的未检查值
+* 查看结构性数据(含有不变量的类对象)被转换成字符串
+* ？？？
 
-### <a name="Rp-leak"></a>P.8: Don't leak any resources
+### <a name="Rp-leak"></a>P.8: 勿泄漏任务资源
 
-##### Reason
+##### 原因
 
-Even a slow growth in resources will, over time, exhaust the availability of those resources.
-This is particularly important for long-running programs, but is an essential piece of responsible programming behavior.
+随着时间的推移，即使是资源的缓慢增长也会耗尽这些资源的可用性，这对于长时间运行的程序特别重要，但也是负责任的编程行为的基本部分。
 
-##### Example, bad
+
+##### 糟糕的例子
 
     void f(char* name)
     {
         FILE* input = fopen(name, "r");
         // ...
-        if (something) return;   // bad: if something == true, a file handle is leaked
+        if (something) return;   // 糟糕：如果 something == true，文件句柄就泄漏了
         // ...
         fclose(input);
     }
 
-Prefer [RAII](#Rr-raii):
+优先使用[RAII](#Rr-raii):
 
     void f(char* name)
     {
         ifstream input {name};
         // ...
-        if (something) return;   // OK: no leak
+        if (something) return;   // OK: 没有泄漏
         // ...
     }
 
-**See also**: [The resource management section](#S-resource)
+**参考**: [资源管理部分](#S-resource)
 
-##### Note
+##### 注意
 
-A leak is colloquially "anything that isn't cleaned up."
-The more important classification is "anything that can no longer be cleaned up."
-For example, allocating an object on the heap and then losing the last pointer that points to that allocation.
-This rule should not be taken as requiring that allocations within long-lived objects must be returned during program shutdown.
-For example, relying on system guaranteed cleanup such as file closing and memory deallocation upon process shutdown can simplify code.
-However, relying on abstractions that implicitly clean up can be as simple, and often safer.
+泄漏通俗地说就是“任何没有被清理的东西”，更重要的分类是“任何不能再被清理的东西”。例如，在堆上分配了一个对象，然而丢失了指向该块内存(分配)的指针。
+不应将此规则应用在程序关闭期间需返回长生命周期对象的分配（译注：在程序退出期间的内存分配可以不需要遵守这些规则），例如，依赖于系统保证的清理可以简化代码，比如关闭文件和在进程关闭时释放内存。然而，依赖于隐式清理的抽象也同样简单，而且通常更安全。
 
-##### Note
+##### 注意
 
-Enforcing [the lifetime safety profile](#SS-lifetime) eliminates leaks.
-When combined with resource safety provided by [RAII](#Rr-raii), it eliminates the need for "garbage collection" (by generating no garbage).
-Combine this with enforcement of [the type and bounds profiles](#SS-force) and you get complete type- and resource-safety, guaranteed by tools.
+使用[生命周期安全性剖面(profile)](#SS-lifetime) 来消除泄漏，当与[RAII](#Rr-raii)提供的资源安全相结合时，就没了"垃圾回收"的需求。当使用[类型和边界剖面（profiles）](#SS-force)时，你可以获得由工具保证的类型和资源安全。
 
-##### Enforcement
+##### 实施
 
-* Look at pointers: Classify them into non-owners (the default) and owners.
-  Where feasible, replace owners with standard-library resource handles (as in the example above).
-  Alternatively, mark an owner as such using `owner` from [the GSL](#S-gsl).
-* Look for naked `new` and `delete`
-* Look for known resource allocating functions returning raw pointers (such as `fopen`, `malloc`, and `strdup`)
+* 查看指针：将它们分为非所有者(默认)和所有者(owner)，在可行的地方，用标准库资源句柄替换所有者(如上面的示例所示)，或者使用[GSL](#S-gsl)中的`owner`来标记所有者。
+* 查看裸用的`new`和`delete`
+* 查看已知返回原始指针的资源分配函数(如`fopen`, `malloc` 和 `strdup`)
 
-### <a name="Rp-waste"></a>P.9: Don't waste time or space
+### <a name="Rp-waste"></a>P.9: 不要浪费时间和空间
 
-##### Reason
+##### 原因
 
-This is C++.
+这是 C++.
 
-##### Note
+##### 注意
 
-Time and space that you spend well to achieve a goal (e.g., speed of development, resource safety, or simplification of testing) is not wasted.
-"Another benefit of striving for efficiency is that the process forces you to understand the problem in more depth." - Alex Stepanov
+为了实现目标而花费的时间和空间(如，开发速度、资源安全性或测试的简化)不是浪费，”追求效率的另一个好处是，这个过程迫使你更深入地理解问题“ -- Alex Stepanov。
 
-##### Example, bad
+##### 糟糕的例子
 
     struct X {
         char ch;
@@ -983,11 +972,11 @@ Time and space that you spend well to achieve a goal (e.g., speed of development
         auto buf = new char[n];
         if (!buf) throw Allocation_error{};
         for (int i = 0; i < n; ++i) buf[i] = p[i];
-        // ... manipulate buffer ...
+        // ... 操作 buffer ...
         X x;
         x.ch = 'a';
-        x.s = string(n);    // give x.s space for *p
-        for (gsl::index i = 0; i < x.s.size(); ++i) x.s[i] = buf[i];  // copy buf into x.s
+        x.s = string(n);    // 为*p而分配的x.s空间
+        for (gsl::index i = 0; i < x.s.size(); ++i) x.s[i] = buf[i];  // 将buf拷贝到x.s
         delete[] buf;
         return x;
     }
@@ -998,130 +987,105 @@ Time and space that you spend well to achieve a goal (e.g., speed of development
         // ...
     }
 
-Yes, this is a caricature, but we have seen every individual mistake in production code, and worse.
-Note that the layout of `X` guarantees that at least 6 bytes (and most likely more) are wasted.
-The spurious definition of copy operations disables move semantics so that the return operation is slow
-(please note that the Return Value Optimization, RVO, is not guaranteed here).
-The use of `new` and `delete` for `buf` is redundant; if we really needed a local string, we should use a local `string`.
-There are several more performance bugs and gratuitous complication.
+是的，这只是一个夸张的描述，但是我们已经看到了生产代码中的每个错误，甚至更糟的问题。注意，`X`的布局至少浪费6个字节(很可能更多)，虚假的复制操作定义禁用了move语义，从而使得返回操作很慢(请注意，这里不保证返回值优化RVO)。为`buf`而使用`new`和`delete`也是多余的，如果我们真的需要一个局部字符串，我们应该使用一个局部`string`。还有更多的性能bug和不必要(gratuitous)的复杂性。
 
-##### Example, bad
+##### 糟糕的例子
 
     void lower(zstring s)
     {
         for (int i = 0; i < strlen(s); ++i) s[i] = tolower(s[i]);
     }
 
-Yes, this is an example from production code.
-We leave it to the reader to figure out what's wasted.
+是的， 这是一个生产代码的示例，我们把它留给读者去找出什么被浪费了。
 
-##### Note
+##### 注意
 
-An individual example of waste is rarely significant, and where it is significant, it is typically easily eliminated by an expert.
-However, waste spread liberally across a code base can easily be significant and experts are not always as available as we would like.
-The aim of this rule (and the more specific rules that support it) is to eliminate most waste related to the use of C++ before it happens.
-After that, we can look at waste related to algorithms and requirements, but that is beyond the scope of these guidelines.
+关于浪费，孤立的示例通常是不重要的，如果重要，通常也很容易被专家来消除。然而，在代码库中大量传播的浪费很容易造成严重后果，而且专家并不总是像我们希望的那样可用。这个规则(以及支持它的更具体的规则)的目的是在使用c++之前消除与之相关的大部分浪费。之后，我们可以查看与算法和需求相关的浪费，但这超出了本指南的范围。
 
-##### Enforcement
+##### 实施
 
-Many more specific rules aim at the overall goals of simplicity and elimination of gratuitous waste.
+许多更具体的规则旨在实现简化和消除不必要浪费的总体目标。
 
-* Flag an unused return value from a user-defined non-defaulted postfix `operator++` or `operator--` function. Prefer using the prefix form instead. (Note: "User-defined non-defaulted" is intended to reduce noise. Review this enforcement if it's still too noisy in practice.)
+* 从用户定义的非默认后缀`operator++`或`operator--`函数中标记一个未使用的返回值，优先使用前缀形式(注:“用户自定义非默认值”是为了减少噪音。如果在实践中仍然过于嘈杂，请重新审视这一措施。)
 
 
-### <a name="Rp-mutable"></a>P.10: Prefer immutable data to mutable data
+### <a name="Rp-mutable"></a>P.10: 优先使用不可变数据，而非可变数据
 
-##### Reason
+##### 原因
 
-It is easier to reason about constants than about variables.
-Something immutable cannot change unexpectedly.
-Sometimes immutability enables better optimization.
-You can't have a data race on a constant.
+对常量进行推理比变量容易，不可变的东西不会意外地改变，有时不变性可以实现更好的优化，常量上也不会出现数据竞争(data race)的问题。
 
-See [Con: Constants and immutability](#S-const)
+参见 [Con: 常量和不变性](#S-const)
 
-### <a name="Rp-library"></a>P.11: Encapsulate messy constructs, rather than spreading through the code
+### <a name="Rp-library"></a>P.11: 封装混乱的结果，而不是分散在代码中
 
-##### Reason
+##### 原因
 
-Messy code is more likely to hide bugs and harder to write.
-A good interface is easier and safer to use.
-Messy, low-level code breeds more such code.
+混乱的代码更难于编写且有可能隐藏bug，一个好的接口使用起来更容易且安全，混乱的底层代码会产生更多混乱的代码。
 
-##### Example
+##### 示例
 
     int sz = 100;
     int* p = (int*) malloc(sizeof(int) * sz);
     int count = 0;
     // ...
     for (;;) {
-        // ... read an int into x, exit loop if end of file is reached ...
-        // ... check that x is valid ...
+        // ... 读取一个int到x中，如果到达文件结尾则退出循环...
+        // ... 检查x是合法的 ...
         if (count == sz)
             p = (int*) realloc(p, sizeof(int) * sz * 2);
         p[count++] = x;
         // ...
     }
 
-This is low-level, verbose, and error-prone.
-For example, we "forgot" to test for memory exhaustion.
-Instead, we could use `vector`:
+这是低级的、冗长的、容易出错的，例如，我们“忘记”测试内存不足。相反，我们可以用vector：
 
     vector<int> v;
     v.reserve(100);
     // ...
     for (int x; cin >> x; ) {
-        // ... check that x is valid ...
+        // ... 检查x是合法的 ...
         v.push_back(x);
     }
 
-##### Note
+##### 注意
 
-The standards library and the GSL are examples of this philosophy.
-For example, instead of messing with the arrays, unions, cast, tricky lifetime issues, `gsl::owner`, etc.,
-that are needed to implement key abstractions, such as `vector`, `span`, `lock_guard`, and `future`, we use the libraries
-designed and implemented by people with more time and expertise than we usually have.
-Similarly, we can and should design and implement more specialized libraries, rather than leaving the users (often ourselves)
-with the challenge of repeatedly getting low-level code well.
-This is a variant of the [subset of superset principle](#R0) that underlies these guidelines.
-
-##### Enforcement
-
-* Look for "messy code" such as complex pointer manipulation and casting outside the implementation of abstractions.
+标准库和GSL就是这种理念的例子，例如，我们使用`vector`、`span`、`lock_guard`和`future`来实现关键抽象，而不是处理数组、联合体、强制转换、棘手的生存期问题、“gsl::owner”等等。我们使用那些拥有更多时间和专业知识的人设计和实现的库，类似地，我们可以而且应该设计和实现更专门化的库，而不是让用户(通常是我们自己)不断地把底层代码弄好，这是[超集原则子集](#R0)的变体，它是这些指导原则的基础。
 
 
-### <a name="Rp-tools"></a>P.12: Use supporting tools as appropriate
+##### 实施
 
-##### Reason
+* 查看“混乱的代码”，比如复杂的指针操作和抽象实现之外的强制转换。
 
-There are many things that are done better "by machine".
-Computers don't tire or get bored by repetitive tasks.
-We typically have better things to do than repeatedly do routine tasks.
 
-##### Example
+### <a name="Rp-tools"></a>P.12: 适当使用支持工具
 
-Run a static analyzer to verify that your code follows the guidelines you want it to follow.
+##### 原因
+
+有很多事情“机器”会做得更好，电脑不会因重复的任务而感到疲劳或厌烦，我们通常有比重复的日常任务更好的事情要做。
+
+##### 示例
+
+运行一个静态分析器来验证您的代码是否遵循您希望它遵循的准则。
 
 ##### Note
 
-See
+参见
 
 * [Static analysis tools](???)
 * [Concurrency tools](#Rconc-tools)
 * [Testing tools](???)
 
-There are many other kinds of tools, such as source code repositories, build tools, etc.,
-but those are beyond the scope of these guidelines.
+还有许多其他类型的工具，比如代码仓库、构建工具等等，但是这些都超出了本指南的范围。
 
-##### Note
+##### 注意
 
-Be careful not to become dependent on over-elaborate or over-specialized tool chains.
-Those can make your otherwise portable code non-portable.
+注意不要依赖于过于精细或专业化的工具链，否则，您的可移植代码将变得不可移植。
 
 
-### <a name="Rp-lib"></a>P.13: Use support libraries as appropriate
+### <a name="Rp-lib"></a>P.13: 适当使用支持库
 
-##### Reason
+##### 原因
 
 Using a well-designed, well-documented, and well-supported library saves time and effort;
 its quality and documentation are likely to be greater than what you could do
