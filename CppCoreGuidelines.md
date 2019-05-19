@@ -1087,91 +1087,81 @@ date被做了两次的合法性验证（`Date`的构造函数），并以字符�
 
 ##### 原因
 
-Using a well-designed, well-documented, and well-supported library saves time and effort;
-its quality and documentation are likely to be greater than what you could do
-if the majority of your time must be spent on an implementation.
-The cost (time, effort, money, etc.) of a library can be shared over many users.
-A widely used library is more likely to be kept up-to-date and ported to new systems than an individual application.
-Knowledge of a widely-used library can save time on other/future projects.
-So, if a suitable library exists for your application domain, use it.
+使用设计良好、文档丰富和支持良好的库可以节省时间和精力；如果您的大部分时间必须花在实现上，那么它的质量和文档可能比您所能做的更好。库的成本(时间、精力、金钱等)可以由多个用户平摊。与单个应用程序相比，广泛使用的库更有可能保持更新并移植到新系统。了解广泛使用的库可以在其他/将来的项目上节省时间。因此，如果存在适合您的应用程序域的库，那么就使用它。
 
-##### Example
+##### 示例
 
     std::sort(begin(v), end(v), std::greater<>());
 
-Unless you are an expert in sorting algorithms and have plenty of time,
-this is more likely to be correct and to run faster than anything you write for a specific application.
-You need a reason not to use the standard library (or whatever foundational libraries your application uses) rather than a reason to use it.
+除非您是排序算法方面的专家，并且有足够的时间，否则这比为特定应用程序编写的任何东西都更有可能是正确的，并且运行得更快。您需要一个不使用标准库(或应用程序使用的任何基础库)的理由，而不是一个使用它的理由。
 
-##### Note
+##### 注意
 
-By default use
+使用默认的库
 
-* The [ISO C++ Standard Library](#S-stdlib)
-* The [Guidelines Support Library](#S-gsl)
+* The [IOS C++的标准库](#S-stdlib)
+* The [GSL:指南支持库](#S-gsl)
 
-##### Note
+##### 注意
 
-If no well-designed, well-documented, and well-supported library exists for an important domain,
-maybe you should design and implement it, and then use it.
+如果在重要领域没有设计良好，文档良好和支持良好的库，你应该去设计、实现并使用它。
 
 
-# <a name="S-interfaces"></a>I: Interfaces
+# <a name="S-interfaces"></a>I: 接口
 
-An interface is a contract between two parts of a program. Precisely stating what is expected of a supplier of a service and a user of that service is essential.
-Having good (easy-to-understand, encouraging efficient use, not error-prone, supporting testing, etc.) interfaces is probably the most important single aspect of code organization.
+接口是程序两部分之间的契约，准确地说明对服务供应商和该服务用户的期望是至关重要的。良好的接口(易于理解、鼓励高效使用、不容易出错、支持测试等等)可能是代码组织中最重要的一个方面。
 
-Interface rule summary:
+接口规则总结:
 
-* [I.1: Make interfaces explicit](#Ri-explicit)
-* [I.2: Avoid non-`const` global variables](#Ri-global)
-* [I.3: Avoid singletons](#Ri-singleton)
-* [I.4: Make interfaces precisely and strongly typed](#Ri-typed)
-* [I.5: State preconditions (if any)](#Ri-pre)
-* [I.6: Prefer `Expects()` for expressing preconditions](#Ri-expects)
-* [I.7: State postconditions](#Ri-post)
-* [I.8: Prefer `Ensures()` for expressing postconditions](#Ri-ensures)
-* [I.9: If an interface is a template, document its parameters using concepts](#Ri-concepts)
-* [I.10: Use exceptions to signal a failure to perform a required task](#Ri-except)
-* [I.11: Never transfer ownership by a raw pointer (`T*`) or reference (`T&`)](#Ri-raw)
-* [I.12: Declare a pointer that must not be null as `not_null`](#Ri-nullptr)
-* [I.13: Do not pass an array as a single pointer](#Ri-array)
-* [I.22: Avoid complex initialization of global objects](#Ri-global-init)
-* [I.23: Keep the number of function arguments low](#Ri-nargs)
-* [I.24: Avoid adjacent unrelated parameters of the same type](#Ri-unrelated)
-* [I.25: Prefer abstract classes as interfaces to class hierarchies](#Ri-abstract)
-* [I.26: If you want a cross-compiler ABI, use a C-style subset](#Ri-abi)
-* [I.27: For stable library ABI, consider the Pimpl idiom](#Ri-pimpl)
-* [I.30: Encapsulate rule violations](#Ri-encapsulate)
+* [I.1: 使接口明确](#Ri-explicit)
+* [I.2: 避免非`const`的全局变量](#Ri-global)
+* [I.3: 避免单例](#Ri-singleton)
+* [I.4: 使接口精确且强类型](#Ri-typed)
+* [I.5: 声明先决条件 (if any)](#Ri-pre)
+* [I.6: 优先使用 `Expects()` 来表达先决条件](#Ri-expects)
+* [I.7: 声明后置条件](#Ri-post)
+* [I.8: 优先使用 `Ensures()` 来表达后置条件](#Ri-ensures)
+* [I.9: 如果接口是模板，使用concepts来文档化它的参数](#Ri-concepts)
+* [I.10: 使用异常来表示执行所需任务失败](#Ri-except)
+* [I.11: 永远不要使用原始指针(`T*`)和引用(`T&`)来转移所有权](#Ri-raw)
+* [I.12: 声明不能为null的指针为`not_null`](#Ri-nullptr)
+* [I.13: 不要以单个指针的形式传递数组](#Ri-array)
+* [I.22: 避免全局对象的复杂初始化](#Ri-global-init)
+* [I.23: 函数的参数个数要少 ](#Ri-nargs)
+* [I.24: 避免相邻不相关参数的类型相同](#Ri-unrelated)
+* [I.25: 优先使用抽象类，而非类层次结构](#Ri-abstract)
+* [I.26: 如果想要跨编译器折ABI，那么使用C-style的子集](#Ri-abi)
+* [I.27: 为稳定的库ABI，考虑Pimpl](#Ri-pimpl)
+* [I.30: 封装违反规则的行为](#Ri-encapsulate)
 
-**See also**:
+**也参见**:
 
-* [F: Functions](#S-functions)
-* [C.concrete: Concrete types](#SS-concrete)
-* [C.hier: Class hierarchies](#SS-hier)
-* [C.over: Overloading and overloaded operators](#SS-overload)
-* [C.con: Containers and other resource handles](#SS-containers)
-* [E: Error handling](#S-errors)
-* [T: Templates and generic programming](#S-templates)
+* [F: 函数](#S-functions)
+* [C.concrete: 具体的类型](#SS-concrete)
+* [C.hier: 类层次结构](#SS-hier)
+* [C.over: 重载和操作符重载](#SS-overload)
+* [C.con: 容器和其他资源句柄](#SS-containers)
+* [E: 错误处理](#S-errors)
+* [T: 模板和泛型编程](#S-templates)
 
-### <a name="Ri-explicit"></a>I.1: Make interfaces explicit
+### <a name="Ri-explicit"></a>I.1: 使接口明确
 
-##### Reason
+##### 原因
 
-Correctness. Assumptions not stated in an interface are easily overlooked and hard to test.
+正确性，没有被接口说明的假设容易被忽略，且难以测试。
 
-##### Example, bad
+##### 糟糕的示例
 
-Controlling the behavior of a function through a global (namespace scope) variable (a call mode) is implicit and potentially confusing. For example:
+通过全局(命名空间)变量(调用模式)来控制函数的行为是隐式的，可能会造成混淆，例如:
 
     int round(double d)
     {
-        return (round_up) ? ceil(d) : d;    // don't: "invisible" dependency
+        return (round_up) ? ceil(d) : d;    // 不要这样做: "不可见的" 依赖
     }
 
-It will not be obvious to a caller that the meaning of two calls of `round(7.2)` might give different results.
+对于调用者来说，`round(7.2)`的两个调用可能会产生不同的结果这一点并不明显。
 
-##### Exception
+##### 例外
 
 Sometimes we control the details of a set of operations by an environment variable, e.g., normal vs. verbose output or debug vs. optimized.
 The use of a non-local control is potentially confusing, but controls only implementation details of otherwise fixed semantics.
