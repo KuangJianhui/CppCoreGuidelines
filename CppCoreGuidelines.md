@@ -1152,7 +1152,7 @@ date被做了两次的合法性验证（`Date`的构造函数），并以字符�
 
 ##### 糟糕的示例
 
-通过全局(命名空间)变量(调用模式)来控制函数的行为是隐式的，可能会造成混淆，例如:
+隐式地通过全局(命名空间)变量(调用模式)来控制函数的行为可能会造成混淆，例如:
 
     int round(double d)
     {
@@ -1163,102 +1163,95 @@ date被做了两次的合法性验证（`Date`的构造函数），并以字符�
 
 ##### 例外
 
-Sometimes we control the details of a set of operations by an environment variable, e.g., normal vs. verbose output or debug vs. optimized.
-The use of a non-local control is potentially confusing, but controls only implementation details of otherwise fixed semantics.
+有时我们通过一组环境变量来控制一组操作的细节，如正常输出和冗长(verbose)输出或者调式的和优化的，使用非本地的控制(变量)存在潜在的混乱，但控制”具有固定语义的“实现细节除外。
 
-##### Example, bad
+##### 糟糕的示例
 
-Reporting through non-local variables (e.g., `errno`) is easily ignored. For example:
+非本地变量的报告（如，`errno`）很容易被忽略，例如：
 
-    // don't: no test of printf's return value
+    // 不要这样做: 没有测试printf的返回值
     fprintf(connection, "logging: %d %d %d\n", x, y, s);
 
-What if the connection goes down so that no logging output is produced? See I.???.
+如果`connection`失败从而导致没输出日志产生怎么办？参见I.???.
 
-**Alternative**: Throw an exception. An exception cannot be ignored.
+**可选方案**: 抛出异常，异常是不可以被忽略的。
 
-**Alternative formulation**: Avoid passing information across an interface through non-local or implicit state.
-Note that non-`const` member functions pass information to other member functions through their object's state.
+**可选方案**: 避免使用非本地变量或隐式状态在接口间传递信息，注意非`const`的成员函数使用它们的对象状态（成员变量）来向其它成员函数传递信息。
 
-**Alternative formulation**: An interface should be a function or a set of functions.
-Functions can be template functions and sets of functions can be classes or class templates.
+**可选方案**: 一个接口应该是一个函数或一组函数，函数可以是模板函数，函数集合可以是类或者模板类。
 
-##### Enforcement
+##### 实施
 
-* (Simple) A function should not make control-flow decisions based on the values of variables declared at namespace scope.
-* (Simple) A function should not write to variables declared at namespace scope.
+* (简单) 函数的控制流不应该基于命名空间(`namespace`)范围的变量来做决定。
+* (简单) 函数不应该更改命名空间(`namespace`)范围的变量。
 
-### <a name="Ri-global"></a>I.2: Avoid non-`const` global variables
+### <a name="Ri-global"></a>I.2: 避免非`const`的全局变量
 
-##### Reason
+##### 原因
 
-Non-`const` global variables hide dependencies and make the dependencies subject to unpredictable changes.
+非`const`的全局变量隐藏了依赖关系，依赖了不可预测的变化。
 
-##### Example
+##### 示例
 
     struct Data {
-        // ... lots of stuff ...
-    } data;            // non-const data
+        // ... 很多东西 ...
+    } data;            // 非const的data
 
-    void compute()     // don't
+    void compute()     // 不要这样做
     {
-        // ... use data ...
+        // ... 使用 data ...
     }
 
-    void output()     // don't
+    void output()     // 不要这样做
     {
-        // ... use data ...
+        // ... 使用 data ...
     }
 
-Who else might modify `data`?
+还有谁可以修改`data`?
+
+##### 注意
+
+全局常量是有用的。
+
+##### 注意
+
+对全局变量规则适用于名称空间(`namespace`)范围变量。
+
+**可选方案**: 如果你想使用全局(更加常用的namespace)数据来避免拷贝操作，考虑使用`const`的引用来传递数据对象，另一个方案是将数据和操作定义一个对象的状态(成员变量)和成员函数。
+
+**警告**: 谨防数据竞争(data race)：如果一个线程可以访问非局部数据(或数据以引用的方式传递)，而另一个线程同时执行被调用的函数，那么就会存在数据竞争。每一个可变数据的指针或引用都是一个潜在的数据竞争。
 
 ##### Note
 
-Global constants are useful.
+不可变数据不存在数据竞争问题。
+
+**参考**: 参见 [rules for calling functions](#SS-call).
 
 ##### Note
 
-The rule against global variables applies to namespace scope variables as well.
+规则是”避免“而不是”不要使用“，也存在（不多）的异常情况，如`cin`， `cout`和`cerr`。
 
-**Alternative**: If you use global (more generally namespace scope) data to avoid copying, consider passing the data as an object by reference to `const`.
-Another solution is to define the data as the state of some object and the operations as member functions.
+##### 实施
 
-**Warning**: Beware of data races: If one thread can access nonlocal data (or data passed by reference) while another thread executes the callee, we can have a data race.
-Every pointer or reference to mutable data is a potential data race.
+(简单) 报告所有在命名空间范围内的非`const`变量。
 
-##### Note
+### <a name="Ri-singleton"></a>I.3: 避免单例
 
-You cannot have a race condition on immutable data.
+##### 原因
 
-**References**: See the [rules for calling functions](#SS-call).
+单例就是伪装的复杂全局对象。
 
-##### Note
-
-The rule is "avoid", not "don't use." Of course there will be (rare) exceptions, such as `cin`, `cout`, and `cerr`.
-
-##### Enforcement
-
-(Simple) Report all non-`const` variables declared at namespace scope.
-
-### <a name="Ri-singleton"></a>I.3: Avoid singletons
-
-##### Reason
-
-Singletons are basically complicated global objects in disguise.
-
-##### Example
+##### 示例
 
     class Singleton {
-        // ... lots of stuff to ensure that only one Singleton object is created,
-        // that it is initialized properly, etc.
+        // ... 很多工作来保证只有一个单例对象被创建和正确的初始化。
     };
 
-There are many variants of the singleton idea.
-That's part of the problem.
+有非常多不同的单例变体，这只是总是的一部分。
 
 ##### Note
 
-If you don't want a global object to change, declare it `const` or `constexpr`.
+如果你不想更改一个全局对象，将它声明为`const`或`constexpr`。
 
 ##### Exception
 
