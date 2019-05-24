@@ -1309,15 +1309,15 @@ Consider:
 
 **可先方案**: 通常，模板参数可以通过将其转换成`T*`或`T&`来消除`void*`，在泛型代码中`T`可以通用或概念受限的模板参数。
 
-##### Example, bad
+##### 糟糕的示例
 
-Consider:
+考虑:
 
-    draw_rect(100, 200, 100, 500); // what do the numbers specify?
+    draw_rect(100, 200, 100, 500); // 这些数字指什么？
 
-    draw_rect(p.x, p.y, 10, 20); // what units are 10 and 20 in?
+    draw_rect(p.x, p.y, 10, 20); // 10和20的单位是什么?
 
-It is clear that the caller is describing a rectangle, but it is unclear what parts they relate to. Also, an `int` can carry arbitrary forms of information, including values of many units, so we must guess about the meaning of the four `int`s. Most likely, the first two are an `x`,`y` coordinate pair, but what are the last two?
+很明显，调用者正在描述一个矩形，但它们关联的部分并不明显，并且`int`可以携带任意形式的信息，包括许多单位的值，所以我们需要猜测4个`int`的含义，前面两个很有可能是`x`和`y`坐标，但后面两个是什么呢？
 
 Comments and parameter names can help, but we could be explicit:
 
