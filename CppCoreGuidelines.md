@@ -1253,71 +1253,61 @@ date被做了两次的合法性验证（`Date`的构造函数），并以字符�
 
 如果你不想更改一个全局对象，将它声明为`const`或`constexpr`。
 
-##### Exception
+##### 例外情况
 
-You can use the simplest "singleton" (so simple that it is often not considered a singleton) to get initialization on first use, if any:
-
+您可以使用最简单的“单例”(非常简单，以至于通常不认为它是单例)，以便在第一次使用时进行初始化：
+    
     X& myX()
     {
         static X my_x {3};
         return my_x;
     }
 
-This is one of the most effective solutions to problems related to initialization order.
-In a multi-threaded environment, the initialization of the static object does not introduce a race condition
-(unless you carelessly access a shared object from within its constructor).
+这是解决初始化顺序相关问题的最有效方法之一。在多线程环境中，静态对象的初始化不会引入竞态条件(除非您不小心从共享对象的构造函数中访问它)。
 
-Note that the initialization of a local `static` does not imply a race condition.
-However, if the destruction of `X` involves an operation that needs to be synchronized we must use a less simple solution.
-For example:
+注意，局部`static`对象的初始化并不意味着有竞态条件，但是，当`X`的析构中包含需要同步的操作时，我们必要使用一种不那么简单的方案，例如：
 
     X& myX()
     {
         static auto p = new X {3};
-        return *p;  // potential leak
+        return *p;  // 潜在的泄漏
     }
 
-Now someone must `delete` that object in some suitably thread-safe way.
-That's error-prone, so we don't use that technique unless
+现在必须有人适当地以线程安全的方式`delete`该对象，那是易于出错的，所以我们不使用这种技巧，除非有下面这些情况：
 
-* `myX` is in multi-threaded code,
-* that `X` object needs to be destroyed (e.g., because it releases a resource), and
-* `X`'s destructor's code needs to be synchronized.
+* `myX`是多线程的代码
+* `X`对象需要被销毁 (等等，因为它释放资源)
+* `X`的析构代码需要同步
 
-If you, as many do, define a singleton as a class for which only one object is created, functions like `myX` are not singletons, and this useful technique is not an exception to the no-singleton rule.
+如果你和许多人一样将单例定义为只创建一个对象的类，那么像`myX`这样的函数就不算是单例，这种技巧也不是避免使用单例这一规则的例外情况。
 
-##### Enforcement
+##### 实施
 
-Very hard in general.
+通常来说很难。
 
-* Look for classes with names that include `singleton`.
-* Look for classes for which only a single object is created (by counting objects or by examining constructors).
-* If a class X has a public static function that contains a function-local static of the class' type X and returns a pointer or reference to it, ban that.
+* 寻找名字中包含`singleton`的类。
+* 寻找只创建了一个对象的类（通过对象计数或检测构造函数）。
+* 如果类X中有一个公有静态函数，该函数中有一个类型为X的静态局部(函数)对象，并返回了该指向对象的的引用或指针时，禁用该函数。
 
-### <a name="Ri-typed"></a>I.4: Make interfaces precisely and strongly typed
+### <a name="Ri-typed"></a>I.4: 使接口精确且强类型
 
 ##### Reason
 
-Types are the simplest and best documentation, improve legibility due to their well-defined meaning, and are checked at compile time.
-Also, precisely typed code is often optimized better.
+类型是最简单和最好的文档，其明确的含义提高了可读性，亦可在编译时进行检查。此外，精确类型的代码通常优化得更好。
 
-##### Example, don't
+##### 示例, 不要这样用
 
 Consider:
 
-    void pass(void* data);    // weak and under qualified type void* is suspicious
+    void pass(void* data);    // 弱类型和未限定的void*是可疑的
 
-Callers are unsure what types are allowed and if the data may
-be mutated as `const` is not specified. Note all pointer types
-implicitly convert to void*, so it is easy for callers to provide this value.
+调用者不确定什么类型是允许的，由于`const`没有指定，所以也不确定data是否可变。注意，所有的指针类型都可以被隐藏转换成`void*`，所以调用者很容易提供这个值（译注：太过随意）。
 
-The callee must `static_cast` data to an unverified type to use it.
-That is error-prone and verbose.
+被调用者必须要`static_cast`到未确认的类型来使用data（译注：通常不能直接操作void*类型），这是易于出错且啰唆的。
 
-Only use `const void*` for passing in data in designs that are indescribable in C++. Consider using a `variant` or a pointer to base instead.
+在C++中仅仅使用`const void*`来传递数据也是难以捉摸的，考虑使用`variant`或者指针基类的指针。
 
-**Alternative**: Often, a template parameter can eliminate the `void*` turning it into a `T*` or `T&`.
-For generic code these `T`s can be general or concept constrained template parameters.
+**可先方案**: 通常，模板参数可以通过将其转换成`T*`或`T&`来消除`void*`，在泛型代码中`T`可以通用或概念受限的模板参数。
 
 ##### Example, bad
 
