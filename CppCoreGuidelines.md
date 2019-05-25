@@ -1556,23 +1556,19 @@ Consider:
 
 ##### Note
 
-Ideally, postconditions are stated in the interface/declaration so that users can easily see them.
-Only postconditions related to the users can be stated in the interface.
-Postconditions related only to internal state belongs in the definition/implementation.
+理想情况下，后置条件应声明在接口或声明，以便用户可以方便地看到。只有与用户相关的后置条件才声明在接口中，仅与内部状态相关的后置条件则声明在定义或实现中。
 
-##### Enforcement
+##### 实施
 
-(Not enforceable) This is a philosophical guideline that is infeasible to check
-directly in the general case. Domain specific checkers (like lock-holding
-checkers) exist for many toolchains.
+(不可强制执行)这是一个哲学意义上指引，在一般情况下无法直接检查，但许多工具链中存在特定领域的检查器(如锁持有检查器)。
 
-### <a name="Ri-ensures"></a>I.8: Prefer `Ensures()` for expressing postconditions
+### <a name="Ri-ensures"></a>I.8: 使用`Ensures()`来表达后置条件
 
-##### Reason
+##### 原因
 
-To make it clear that the condition is a postcondition and to enable tool use.
+明确一个条件是后置条件，并可使用工具进行检查。
 
-##### Example
+##### 示例
 
     void f()
     {
@@ -1584,20 +1580,17 @@ To make it clear that the condition is a postcondition and to enable tool use.
 
 ##### Note
 
-Postconditions can be stated in many ways, including comments, `if`-statements, and `assert()`.
-This can make them hard to distinguish from ordinary code, hard to update, hard to manipulate by tools, and may have the wrong semantics.
+后置条件可以使用多种方式进行声明，包括注释、`if`语句和`assert()`等，但这可能使它们难以与普通代码区分，难以更新，难以被工具操作，并且可能具有错误的语义。
 
-**Alternative**: Postconditions of the form "this resource must be released" are best expressed by [RAII](#Rr-raii).
+**可行方案**: ”资源必须被释放“类型的后置条件可以使用[RAII](#Rr-raii)来更好的表达。
 
 ##### Note
 
-Ideally, that `Ensures` should be part of the interface, but that's not easily done.
-For now, we place it in the definition (function body).
-Once language support becomes available (e.g., see the [contract proposal](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)) we will adopt the standard version of preconditions, postconditions, and assertions.
+理想情况下，`Ensures`应该是接口的一部分，但这是不容易实现的，现在我们把它放在定义(函数体)中。一旦语言支持这一点(例如，参见[合同建议](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)，我们将采用先决条件、后置条件和断言的标准版本。
 
-##### Enforcement
+##### 实施
 
-(Not enforceable) Finding the variety of ways postconditions can be asserted is not feasible. Warning about those that can be easily identified (`assert()`) has questionable value in the absence of a language facility.
+（不可强制执行）寻找各种可被断言(assert)的后置条件是不可行的，在缺乏语言特性支持的情况下，对那些容易识别(`assert()`)的对象发出警告也是有问题的。
 
 ### <a name="Ri-concepts"></a>I.9: If an interface is a template, document its parameters using concepts
 
