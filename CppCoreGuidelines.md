@@ -248,14 +248,9 @@ You can look at design concepts used to express the rules:
 旨在防止事故发生的指导方针常常禁止完全合法的c++。
 然而，当有两种表达思想的方法时，一种方法显示出常见的错误来源，而另一种方法没有，我们试图引导程序员使用后者。
 
-## <a name="SS-non"></a>非目标
+## <a name="SS-non"></a>不是我们的目标
 
-The rules are not intended to be minimal or orthogonal.
-In particular, general rules can be simple, but unenforceable.
-Also, it is often hard to understand the implications of a general rule.
-More specialized rules are often easier to understand and to enforce, but without general rules, they would just be a long list of special cases.
-We provide rules aimed at helping novices as well as rules supporting expert use.
-Some rules can be completely enforced, but others are based on heuristics.
+并不打算让这些规则算是最小或正交的，特别是，通用规则可能很简单，但无法强制执行，而且，通常很难理解一般规则的含义。更细化的规则通常更容易理解和执行，但是如果没有通用规则，它们只是一长串特殊情况的列表。我们旨在提供能帮助新手和支持专家使用的规则，有些规则可以完全强制执行，但另一些则是启发式的。
 
 These rules are not meant to be read serially, like a book.
 You can browse through them using the links.
@@ -372,24 +367,24 @@ This is not a language manual.
 It is meant to be helpful, rather than complete, fully accurate on technical details, or a guide to existing code.
 Recommended information sources can be found in [the references](#S-references).
 
-## <a name="SS-sec"></a>In.sec: Major sections
+## <a name="SS-sec"></a>In.sec: 主要部分
 
-* [In: Introduction](#S-introduction)
-* [P: Philosophy](#S-philosophy)
-* [I: Interfaces](#S-interfaces)
-* [F: Functions](#S-functions)
-* [C: Classes and class hierarchies](#S-class)
-* [Enum: Enumerations](#S-enum)
-* [R: Resource management](#S-resource)
-* [ES: Expressions and statements](#S-expr)
-* [Per: Performance](#S-performance)
-* [CP: Concurrency and parallelism](#S-concurrency)
-* [E: Error handling](#S-errors)
-* [Con: Constants and immutability](#S-const)
-* [T: Templates and generic programming](#S-templates)
-* [CPL: C-style programming](#S-cpl)
+* [In: 介绍](#S-introduction)
+* [P: 哲学](#S-philosophy)
+* [I: 接口](#S-interfaces)
+* [F: 函数](#S-functions)
+* [C: 类和类层次结构](#S-class)
+* [Enum: 枚举](#S-enum)
+* [R: 资源管理](#S-resource)
+* [ES: 表达式和声明](#S-expr)
+* [Per: 性能](#S-performance)
+* [CP: 并发和并行](#S-concurrency)
+* [E: 错误处理](#S-errors)
+* [Con: 常量和不变性](#S-const)
+* [T: 模板和泛型编程](#S-templates)
+* [CPL: C风格编程](#S-cpl)
 * [SF: Source files](#S-source)
-* [SL: The Standard Library](#S-stdlib)
+* [SL: 标准库](#S-stdlib)
 
 辅助部分:
 
@@ -407,10 +402,9 @@ Recommended information sources can be found in [the references](#S-references).
 * [术语](#S-glossary)
 * [To-do: Unclassified proto-rules](#S-unclassified)
 
-These sections are not orthogonal.
+这些章节之间不是正交的（译注：完全独立的）。
 
-Each section (e.g., "P" for "Philosophy") and each subsection (e.g., "C.hier" for "Class Hierarchies (OOP)") have an abbreviation for ease of searching and reference.
-The main section abbreviations are also used in rule numbers (e.g., "C.11" for "Make concrete types regular").
+每个章节(如"P"表示“哲学”)和子章节（如"c.hier"表示"类层次结构(OOP)"）都有一个便于搜索和引用的缩写，主要章节的缩写也会使用规则编号(如"C.11"表示“规范具体类型”)。
 
 # <a name="S-philosophy"></a>P: Philosophy
 
@@ -1319,26 +1313,25 @@ Consider:
 
 很明显，调用者正在描述一个矩形，但它们关联的部分并不明显，并且`int`可以携带任意形式的信息，包括许多单位的值，所以我们需要猜测4个`int`的含义，前面两个很有可能是`x`和`y`坐标，但后面两个是什么呢？
 
-Comments and parameter names can help, but we could be explicit:
+虽然注释和参数名字是有帮助的，但是我们可以显示地这样声明：
 
     void draw_rectangle(Point top_left, Point bottom_right);
     void draw_rectangle(Point top_left, Size height_width);
 
-    draw_rectangle(p, Point{10, 20});  // two corners
-    draw_rectangle(p, Size{10, 20});   // one corner and a (height, width) pair
+    draw_rectangle(p, Point{10, 20});  // 两个角落（译注：左上，右下）
+    draw_rectangle(p, Size{10, 20});   // 一个角落和一个(height, width)对
 
-Obviously, we cannot catch all errors through the static type system
-(e.g., the fact that a first argument is supposed to be a top-left point is left to convention (naming and comments)).
+显然，我们无法使用静态类型系统来捕获所有的错误（例如，按照惯例(名称和注释)左上角应是第一个参数）。
 
-##### Example, bad
+##### 糟糕的例子
 
-Consider:
+考虑如下:
 
-    set_settings(true, false, 42); // what do the numbers specify?
+    set_settings(true, false, 42); //数字指什么?
 
-The parameter types and their values do not communicate what settings are being specified or what those values mean.
+参数类型及其值没有表达出正在指定的设置或这些值的含义。
 
-This design is more explicit, safe and legible:
+(下面)这个设计更加显示、安全且易读：
 
     alarm_settings s{};
     s.enabled = true;
@@ -1346,18 +1339,18 @@ This design is more explicit, safe and legible:
     s.frequency = alarm_settings::every_10_seconds;
     set_settings(s);
 
-For the case of a set of boolean values consider using a flags enum; a pattern that expresses a set of boolean values.
+考虑使用枚举(enum)来表示一组布尔值(boolean)，这是表示一组布尔值的模式。
 
     enable_lamp_options(lamp_option::on | lamp_option::animate_state_transitions);
 
-##### Example, bad
+##### 糟糕的示例
 
-In the following example, it is not clear from the interface what `time_to_blink` means: Seconds? Milliseconds?
+这下面这个示例中，`time_to_blink`的含义不并能直观地从接口中看出，秒？毫秒？
 
-    void blink_led(int time_to_blink) // bad -- the unit is ambiguous
+    void blink_led(int time_to_blink) // 差 -- 单位是有歧义的
     {
         // ...
-        // do something with time_to_blink
+        // 使用time_to_blink做一些事
         // ...
     }
 
@@ -1366,14 +1359,14 @@ In the following example, it is not clear from the interface what `time_to_blink
         blink_led(2);
     }
 
-##### Example, good
+##### 好的示例
 
-`std::chrono::duration` types (C++11) helps making the unit of time duration explicit.
+`std::chrono::duration`(C++11)有助于显示表达连续时间的单位。
 
-    void blink_led(milliseconds time_to_blink) // good -- the unit is explicit
+    void blink_led(milliseconds time_to_blink) // 好 -- 单位明确
     {
         // ...
-        // do something with time_to_blink
+        // 使用time_to_blink做一些事
         // ...
     }
 
@@ -1382,15 +1375,15 @@ In the following example, it is not clear from the interface what `time_to_blink
         blink_led(1500ms);
     }
 
-The function can also be written in such a way that it will accept any time duration unit.
+该函数也可以这样写来接收任意的时间单位：
 
     template<class rep, class period>
-    void blink_led(duration<rep, period> time_to_blink) // good -- accepts any unit
+    void blink_led(duration<rep, period> time_to_blink) // 好 -- 接收任意单位
     {
-        // assuming that millisecond is the smallest relevant unit
+        // 假定毫秒是相关的最小单位
         auto milliseconds_to_blink = duration_cast<milliseconds>(time_to_blink);
         // ...
-        // do something with milliseconds_to_blink
+        // 使用milliseconds_to_blink来做事
         // ...
     }
 
@@ -1406,101 +1399,96 @@ The function can also be written in such a way that it will accept any time dura
 * (Simple) Report the use of more than one `bool` parameter.
 * (Hard to do well) Look for functions that use too many primitive type arguments.
 
-### <a name="Ri-pre"></a>I.5: State preconditions (if any)
+* (简单) 报告所有使用`void*`作为参数或返回值的函数。
+* (简单) 报告不止一个`bool`类型参数的函数。
+* (很难做到很好) 寻找使用太多基本类型参数的函数
 
-##### Reason
+### <a name="Ri-pre"></a>I.5: 声明先决条件 (如果有的话)
 
-Arguments have meaning that may constrain their proper use in the callee.
+##### 原因
 
-##### Example
+参数的含义可能会限制它们在被调用对象中的正确使用。
 
-Consider:
+##### 示例
+
+考虑:
 
     double sqrt(double x);
 
-Here `x` must be nonnegative. The type system cannot (easily and naturally) express that, so we must use other means. For example:
+这里`x`必须是非负的，类型系统不能(简单而自然地)表达这一点，因此我们必须使用其他方法，例如:
 
-    double sqrt(double x); // x must be nonnegative
+    double sqrt(double x); // x 必须是非负的
 
-Some preconditions can be expressed as assertions. For example:
+一些先决条件可以表示为断言(assert)，例如:
 
     double sqrt(double x) { Expects(x >= 0); /* ... */ }
 
-Ideally, that `Expects(x >= 0)` should be part of the interface of `sqrt()` but that's not easily done. For now, we place it in the definition (function body).
+理想情况下，`expected (x >= 0)`应该是`sqrt()`接口的一部分，但这并不容易做到，现在，我们将它放在定义(函数体)中。
 
-**References**: `Expects()` is described in [GSL](#S-gsl).
-
-##### Note
-
-Prefer a formal specification of requirements, such as `Expects(p);`.
-If that is infeasible, use English text in comments, such as `// the sequence [p:q) is ordered using <`.
+**参考**: `Expects()`在[GSL](#S-gsl)的描述.
 
 ##### Note
 
-Most member functions have as a precondition that some class invariant holds.
-That invariant is established by a constructor and must be reestablished upon exit by every member function called from outside the class.
-We don't need to mention it for each member function.
+优先使用需求的正式规范，如`Expects(p);`，如是不可行，则在注释中注明，如`// 序列[p:q)使用<进行排序`。
 
-##### Enforcement
+##### Note
 
-(Not enforceable)
+大多数类成员函数都有一个让某些类的不变式成立的先决条件，该不变式由构造函数建立，并且必须由从类外部调用的每个成员函数在退出时重新建立，我们不需要在每个成员函数都提到它。
 
-**See also**: The rules for passing pointers. ???
+##### 实施
 
-### <a name="Ri-expects"></a>I.6: Prefer `Expects()` for expressing preconditions
+不可强行的
 
-##### Reason
+**参见**: 传递指针的规则 ???
 
-To make it clear that the condition is a precondition and to enable tool use.
+### <a name="Ri-expects"></a>I.6: 使用`Expects()`表达先决条件
 
-##### Example
+##### 原因
+
+明确条件是先决条件，并允许使用(自动化)工具进行检测。
+
+##### 示例
 
     int area(int height, int width)
     {
-        Expects(height > 0 && width > 0);            // good
-        if (height <= 0 || width <= 0) my_error();   // obscure
+        Expects(height > 0 && width > 0);            // 好的
+        if (height <= 0 || width <= 0) my_error();   // 晦涩的，不明确的
         // ...
     }
 
 ##### Note
 
-Preconditions can be stated in many ways, including comments, `if`-statements, and `assert()`.
-This can make them hard to distinguish from ordinary code, hard to update, hard to manipulate by tools, and may have the wrong semantics (do you always want to abort in debug mode and check nothing in productions runs?).
+先决条件可以用多种方式声明，包括注释、`if`语句和`assert()`等，但这可能使它们难以与普通代码区分，难以更新，难以被工具操作，并且可能具有错误的语义(您是否总是希望能在debug模式下中止(abort)，并且在产品release时不做检查?)
 
 ##### Note
 
-Preconditions should be part of the interface rather than part of the implementation,
-but we don't yet have the language facilities to do that.
-Once language support becomes available (e.g., see the [contract proposal](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)) we will adopt the standard version of preconditions, postconditions, and assertions.
+先决条件应该是接口的一部分，而不是实现的一部分，但我们还没有语言特性来做到这一点，一旦语言支持这一点(例如，参见[合同建议](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)，我们将采用先决条件、后置条件和断言的标准版本。
 
 ##### Note
 
-`Expects()` can also be used to check a condition in the middle of an algorithm.
+`Expects()`也可以用来检查算法中间的条件。
 
 ##### Note
 
-No, using `unsigned` is not a good way to sidestep the problem of [ensuring that a value is nonnegative](#Res-nonnegative).
+使用`unsigned`也不是回避这个问题[保证值是非负的](#Res-nonnegative)的好方法。
 
-##### Enforcement
+##### 实施
 
-(Not enforceable) Finding the variety of ways preconditions can be asserted is not feasible. Warning about those that can be easily identified (`assert()`) has questionable value in the absence of a language facility.
+（不可强制的）寻找各种可被断言(assert)的先决条件是不可行的，在缺乏语言特性支持的情况下，对那些容易识别(`assert()`)的对象发出警告也是有问题的。
 
-### <a name="Ri-post"></a>I.7: State postconditions
+### <a name="Ri-post"></a>I.7: 声明后置条件
 
-##### Reason
+##### 原因
 
-To detect misunderstandings about the result and possibly catch erroneous implementations.
+检测对结果的误解，并可能捕获错误的实现。
 
-##### Example, bad
+##### 糟糕的示例
 
-Consider:
+考虑:
 
-    int area(int height, int width) { return height * width; }  // bad
+    int area(int height, int width) { return height * width; }  // 糟糕的
 
-Here, we (incautiously) left out the precondition specification, so it is not explicit that height and width must be positive.
-We also left out the postcondition specification, so it is not obvious that the algorithm (`height * width`) is wrong for areas larger than the largest integer.
-Overflow can happen.
-Consider using:
+ 我们(无意识地)遗漏了先决条件，所以`height`和`width`必须为正值就不那么明显。我们同样遗漏了后置条件，所以对于超过最大整数范围的区域，算法(`height * width`)的错误并不那么显而易见，溢出（对于乘法）是有可能发生的，考虑使用：
 
     int area(int height, int width)
     {
@@ -1509,20 +1497,20 @@ Consider using:
         return res;
     }
 
-##### Example, bad
+##### 糟糕的示例
 
-Consider a famous security bug:
+考虑一个著名的安全漏洞：
 
-    void f()    // problematic
+    void f()    // 有问题的做法
     {
         char buffer[MAX];
         // ...
         memset(buffer, 0, sizeof(buffer));
     }
 
-There was no postcondition stating that the buffer should be cleared and the optimizer eliminated the apparently redundant `memset()` call:
+没有后置条件声明buffer应该被清除，优化器(译注：编译器可能会)消除了明显冗余的`memset()`调用:
 
-    void f()    // better
+    void f()    // 更好的做法
     {
         char buffer[MAX];
         // ...
@@ -1532,38 +1520,35 @@ There was no postcondition stating that the buffer should be cleared and the opt
 
 ##### Note
 
-Postconditions are often informally stated in a comment that states the purpose of a function; `Ensures()` can be used to make this more systematic, visible, and checkable.
+后置条件通常在表明函数目的的注释中被非正式地声明，可以使用`ensure()`使其更系统化、更可见和更具可检查性。
 
 ##### Note
 
-Postconditions are especially important when they relate to something that is not directly reflected in a returned result, such as a state of a data structure used.
+当后置条件关联的内容并没有直接反映在返回结果中（如数据结构的状态）时，后置条件尤其重要。
 
-##### Example
+##### 示例
 
-Consider a function that manipulates a `Record`, using a `mutex` to avoid race conditions:
+考虑一个函数在操作`Record`时使用`mutex`来避免竞态条件：
 
     mutex m;
 
-    void manipulate(Record& r)    // don't
+    void manipulate(Record& r)    // 不要这样做
     {
         m.lock();
         // ... no m.unlock() ...
     }
 
-Here, we "forgot" to state that the `mutex` should be released, so we don't know if the failure to ensure release of the `mutex` was a bug or a feature.
-Stating the postcondition would have made it clear:
+这里，我们“忘记”声明`mutex`应该被释放，所以我们不知道没有释放`mutex`到底是一个bug还是一个功能(feature)。声明后置条件会让函数更加清晰：
 
-    void manipulate(Record& r)    // postcondition: m is unlocked upon exit
+    void manipulate(Record& r)    // 后置条件：当退出时m应该被unlock
     {
         m.lock();
         // ... no m.unlock() ...
     }
 
-The bug is now obvious (but only to a human reading comments).
+现在这个bug是明显的（但只有当人阅读注释时），更好的方法是使用[RAII](#Rr-raii)来确保后置条件(“锁必须被释放”)在代码中一定会执行：
 
-Better still, use [RAII](#Rr-raii) to ensure that the postcondition ("the lock must be released") is enforced in code:
-
-    void manipulate(Record& r)    // best
+    void manipulate(Record& r)    // 最好的
     {
         lock_guard<mutex> _ {m};
         // ...
