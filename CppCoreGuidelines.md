@@ -1592,15 +1592,15 @@ Consider:
 
 （不可强制执行）寻找各种可被断言(assert)的后置条件是不可行的，在缺乏语言特性支持的情况下，对那些容易识别(`assert()`)的对象发出警告也是有问题的。
 
-### <a name="Ri-concepts"></a>I.9: If an interface is a template, document its parameters using concepts
+### <a name="Ri-concepts"></a>I.9: 如果接口是模板，则使用concept文档化其参数
 
-##### Reason
+##### 原因
 
-Make the interface precisely specified and compile-time checkable in the (not so distant) future.
+精确地指定接口，(不远的)将来在编译时进行检查。
 
-##### Example
+##### 示例
 
-Use the ISO Concepts TS style of requirements specification. For example:
+使用ISO Concepts TS(Technical Specifications)风格的需求规范(译注：Concepts并未出现在C++17的标准中，而只是作为技术规范来补充C++17)，例如
 
     template<typename Iter, typename Val>
     // requires InputIterator<Iter> && EqualityComparable<ValueType<Iter>>, Val>
@@ -1611,101 +1611,95 @@ Use the ISO Concepts TS style of requirements specification. For example:
 
 ##### Note
 
-Soon (maybe in 2018), most compilers will be able to check `requires` clauses once the `//` is removed.
-Concepts are supported in GCC 6.1 and later.
+不久的将来(可能在2018年)，一旦`//`被移除，大部分的编译都具备检查`requirers`的能力。`Concepts`在GCC 6.1或更新的版本中已经支持(译注：公开的资料显示，仅在这一个公开发行的GCC版本中存在过)。
 
-**See also**: [Generic programming](#SS-GP) and [concepts](#SS-concepts).
+**参见**: [泛型编程](#SS-GP) and [concepts](#SS-concepts).
 
-##### Enforcement
+##### 实施
 
-(Not yet enforceable) A language facility is under specification. When the language facility is available, warn if any non-variadic template parameter is not constrained by a concept (in its declaration or mentioned in a `requires` clause).
+还不能强制执行，该语言工具（Concepts）只还在规范中，当工具可用时，如果任何非可变参数不受某个概念(Concept)的约束则发出警告。
 
-### <a name="Ri-except"></a>I.10: Use exceptions to signal a failure to perform a required task
+### <a name="Ri-except"></a>I.10: 使用异常来表示执行所需任务的失败
 
-##### Reason
+##### 原因
 
-It should not be possible to ignore an error because that could leave the system or a computation in an undefined (or unexpected) state.
-This is a major source of errors.
+不应该忽略错误，因为这会使系统或计算处于未定义(或意外)的状态，这也是错误的主要来源。
 
-##### Example
+##### 示例
 
-    int printf(const char* ...);    // bad: return negative number if output fails
+    int printf(const char* ...);    // 糟糕：当输出失败时返回负值
 
     template <class F, class ...Args>
-    // good: throw system_error if unable to start the new thread
+    // 好的：当不能开始一个新线程时抛出system_error
     explicit thread(F&& f, Args&&... args);
 
 ##### Note
 
-What is an error?
+什么是错误？
 
-An error means that the function cannot achieve its advertised purpose (including establishing postconditions).
-Calling code that ignores an error could lead to wrong results or undefined systems state.
-For example, not being able to connect to a remote server is not by itself an error:
-the server can refuse a connection for all kinds of reasons, so the natural thing is to return a result that the caller should always check.
-However, if failing to make a connection is considered an error, then a failure should throw an exception.
+一个错误意味着函数不能达到它所宣传的目的(包括建立后置条件)，忽略错误的调用代码可能导致错误的结果或未定义的系统状态。例如，不能连接到远程服务器本身并不是一个错误：服务器可以出于各种原因拒绝连接，因此自然会返回调用者应该始终检查的结果；但是，如果连接失败被认为是错误，则失败应该引发异常。
 
-##### Exception
+##### 例外
 
-Many traditional interface functions (e.g., UNIX signal handlers) use error codes (e.g., `errno`) to report what are really status codes, rather than errors. You don't have a good alternative to using such, so calling these does not violate the rule.
+许多传统的接口函数(例如UNIX信号处理程序)使用错误代码(例如`errno`)来报告真正的状态，而不是错误。没有很好的替代方法来使用这样的函数，因此调用这些函数并不违反规则。
 
-##### Alternative
+##### 替代方法
 
 If you can't use exceptions (e.g., because your code is full of old-style raw-pointer use or because there are hard-real-time constraints), consider using a style that returns a pair of values:
 
+如果您不能使用异常(例如，因为代码充满了旧式的raw指针使用，或者因为存在硬实时(hard-real-time)约束)，请考虑使用返回一对值的方式:
+
     int val;
     int error_code;
-    tie(val, error_code) = do_something();
+    tie(val, error_code) = do_something(); // 译注：tie是C++11的用法
     if (error_code) {
-        // ... handle the error or exit ...
+        // ... 处理错误或退出 ...
     }
-    // ... use val ...
+    // ... 使用 val ...
 
-This style unfortunately leads to uninitialized variables.
-A facility [structured bindings](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0144r1.pdf) to deal with that will become available in C++17.
+不幸的是，这种风格导致了未初始化的变量（译注：`int val;`会导致val没有被初始化），处理这个问题的工具[结构化绑定](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0144r1.pdf)将在C++17中提供（译注：C++17已经支持）。
 
     auto [val, error_code] = do_something();
     if (error_code) {
-        // ... handle the error or exit ...
+        // ... 处理错误或退出 ...
     }
-    // ... use val ...
+    // ... 使用 val ...
 
 ##### Note
 
-We don't consider "performance" a valid reason not to use exceptions.
+我们不认为“性能”是不使用异常的正当理由：
 
-* Often, explicit error checking and handling consume as much time and space as exception handling.
-* Often, cleaner code yields better performance with exceptions (simplifying the tracing of paths through the program and their optimization).
-* A good rule for performance critical code is to move checking outside the critical part of the code ([checking](#Rper-checking)).
-* In the longer term, more regular code gets better optimized.
-* Always carefully [measure](#Rper-measure) before making performance claims.
+* 通常，显式的错误检查和处理也会消耗与异常处理同样多的时间和空间。
+* 通常，干净的代码在有异常的情况下会产生更好的性能（简化和优化程序中路径的跟踪）。
+* 性能关键代码的一个好规则是将检查移到代码的关键部分之外([checking](#Rper-checking))。
+* 从长远来看，更规范的代码会得到更好的优化。
+* 在做出性能声明之前一定要仔细[度量](#Rper-measure)。
 
-**See also**: [I.5](#Ri-pre) and [I.7](#Ri-post) for reporting precondition and postcondition violations.
+**另请参阅**: [I.5](#Ri-pre) 和 [I.7](#Ri-post) 来报告违反先决条件和后置条件的情况
 
-##### Enforcement
+##### 实施
 
-* (Not enforceable) This is a philosophical guideline that is infeasible to check directly.
-* Look for `errno`.
+* (不可强制执行的) 这只是一个哲学意义上的指导，不具直接检查的可行性。
+* 寻找 `errno`。
 
-### <a name="Ri-raw"></a>I.11: Never transfer ownership by a raw pointer (`T*`) or reference (`T&`)
+### <a name="Ri-raw"></a>I.11: 永远不要使用原始指针(`T*`)或引用(`T&`)来转移所有权
 
-##### Reason
+##### 原因
 
-If there is any doubt whether the caller or the callee owns an object, leaks or premature destruction will occur.
+如果对调用者或被调用者是否拥有对象有任何疑问，就会发生泄漏或过早析构。
 
-##### Example
+##### 示例
 
-Consider:
+考虑:
 
-    X* compute(args)    // don't
+    X* compute(args)    // 不要这样做
     {
         X* res = new X{};
         // ...
         return res;
     }
 
-Who deletes the returned `X`? The problem would be harder to spot if `compute` returned a reference.
-Consider returning the result by value (use move semantics if the result is large):
+谁来删除返回的`X`？当`compute`返回一个引用时，则更难发现问题。考虑按值返回结果（如果结果很大，使用move语义）：
 
     vector<double> compute(args)  // good
     {
@@ -1714,62 +1708,53 @@ Consider returning the result by value (use move semantics if the result is larg
         return res;
     }
 
-**Alternative**: [Pass ownership](#Rr-smartptrparam) using a "smart pointer", such as `unique_ptr` (for exclusive ownership) and `shared_ptr` (for shared ownership).
-However, that is less elegant and often less efficient than returning the object itself,
-so use smart pointers only if reference semantics are needed.
+**可选方法**: [传递所有权](#Rr-smartptrparam) 使用"智能指针"，如`unique_ptr`(独占所有权)和`shared_ptr`(共享所有权)，然而，这并不会比返回对象本身更优雅和高效，所以只有在需要引用语义时才使用智能指针。
 
-**Alternative**: Sometimes older code can't be modified because of ABI compatibility requirements or lack of resources.
-In that case, mark owning pointers using `owner` from the [guidelines support library](#S-gsl):
+**可选方法**: 有时，由于ABI的兼容性要求和资源缺失，导致更旧代码无法修改，在这种情况下，使用[指南支持库](#S-gsl)中的`owner`标记拥有指针：
 
-    owner<X*> compute(args)    // It is now clear that ownership is transferred
+    owner<X*> compute(args)    // 现在很清楚，所有权已经转移
     {
         owner<X*> res = new X{};
         // ...
         return res;
     }
 
-This tells analysis tools that `res` is an owner.
-That is, its value must be `delete`d or transferred to another owner, as is done here by the `return`.
-
-`owner` is used similarly in the implementation of resource handles.
+这告诉分析工具`res`是所有者，也就是说，它的值必须被`delete`或转移到另一个所有者，就像这里的`return`所做的那样。`owner`在资源句柄的实现中有也类似应用。
 
 ##### Note
 
-Every object passed as a raw pointer (or iterator) is assumed to be owned by the
-caller, so that its lifetime is handled by the caller. Viewed another way:
-ownership transferring APIs are relatively rare compared to pointer-passing APIs,
-so the default is "no ownership transfer."
+作为原始指针(或迭代器)传递的每个对象都假定为调用者所拥有，因此它的生命周期由调用者处理。从另一个角度来看：与指针传递API相比，所有权转移API相对较少，因此默认为“无所有权转移”。
 
-**See also**: [Argument passing](#Rf-conventional), [use of smart pointer arguments](#Rr-smartptrparam), and [value return](#Rf-value-return).
+**另请参阅**: [参数传递](#Rf-conventional)、 [智能指针参数的使用](#Rr-smartptrparam) 和 [按值返回](#Rf-value-return).
 
-##### Enforcement
 
-* (Simple) Warn on `delete` of a raw pointer that is not an `owner<T>`. Suggest use of standard-library resource handle or use of `owner<T>`.
-* (Simple) Warn on failure to either `reset` or explicitly `delete` an `owner` pointer on every code path.
-* (Simple) Warn if the return value of `new` or a function call with an `owner` return value is assigned to a raw pointer or non-`owner` reference.
+##### 实施
 
-### <a name="Ri-nullptr"></a>I.12: Declare a pointer that must not be null as `not_null`
+* (简单) 警告`delete`非`owner<T>`的原始指针，建议使用标准库资源句柄或使用`owner<T>`。
+* (简单) 每条代码路径上`reset`或显式`delete`一个`owner`指针时，警告失败。
+* (简单) 如果`new`的返回值或带`owner`返回值的函数调用被分配给原始指针或非`owner`引用，则发出警告。
 
-##### Reason
+### <a name="Ri-nullptr"></a>I.12: 声明一个非空指针为`not_null`
 
-To help avoid dereferencing `nullptr` errors.
-To improve performance by avoiding redundant checks for `nullptr`.
+##### 原因
 
-##### Example
+帮助避免`nullptr`指针的解引用错误，通过避免对`nullptr`的冗余检查来提高性能。
 
-    int length(const char* p);            // it is not clear whether length(nullptr) is valid
+##### 示例
+
+    int length(const char* p);            // 不清楚length(nullptr)是否合法
 
     length(nullptr);                      // OK?
 
-    int length(not_null<const char*> p);  // better: we can assume that p cannot be nullptr
+    int length(not_null<const char*> p);  // better: 我们假定p不能为nullptr
 
-    int length(const char* p);            // we must assume that p can be nullptr
+    int length(const char* p);            // 我们必须假定p可以为nullptr
 
-By stating the intent in source, implementers and tools can provide better diagnostics, such as finding some classes of errors through static analysis, and perform optimizations, such as removing branches and null tests.
+通过在源代码中声明意图，实现者和工具可以提供更好的诊断，比如通过静态分析找到某些错误类，以及执行优化，比如删除分支和空测试。
 
 ##### Note
 
-`not_null` is defined in the [guidelines support library](#S-gsl).
+`not_null` 定义在 [指南支持库](#S-gsl).
 
 ##### Note
 
