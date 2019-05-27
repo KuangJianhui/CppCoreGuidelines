@@ -1758,44 +1758,43 @@ If you can't use exceptions (e.g., because your code is full of old-style raw-po
 
 ##### Note
 
-The assumption that the pointer to `char` pointed to a C-style string (a zero-terminated string of characters) was still implicit, and a potential source of confusion and errors. Use `czstring` in preference to `const char*`.
+指向`char`的指针指向C风格的字符串(以`\0`结尾的字符串)这一个假设也是隐式的，这是困惑和错误的一个潜在根源。优先使用`czstring`，而不是`const char*`。
 
-    // we can assume that p cannot be nullptr
-    // we can assume that p points to a zero-terminated array of characters
+    // 我们假设p不能为nullptr
+    // 我们假设p指向以0结尾的字符数组
     int length(not_null<zstring> p);
 
-Note: `length()` is, of course, `std::strlen()` in disguise.
+注意：`length()`只是`std::strlen()`的伪装。
 
-##### Enforcement
+##### 实施
 
-* (Simple) ((Foundation)) If a function checks a pointer parameter against `nullptr` before access, on all control-flow paths, then warn it should be declared `not_null`.
-* (Complex) If a function with pointer return value ensures it is not `nullptr` on all return paths, then warn the return type should be declared `not_null`.
+* (简单) ((基础))，如果函数在所有控制流路径上使用指针参数之前都检查`nullptr`，则警告应当声明为`not_null`。
+* (复杂) 如果函数在所有返回路径上都能保证返回的指针不为`nullptr`，则警告返回类型就声明为`not_null`。
 
-### <a name="Ri-array"></a>I.13: Do not pass an array as a single pointer
+### <a name="Ri-array"></a>I.13: 不要将一个数组作为单个指针进行传递
 
-##### Reason
+##### 原因
 
- (pointer, size)-style interfaces are error-prone. Also, a plain pointer (to array) must rely on some convention to allow the callee to determine the size.
+ (指针, 大小)风格的接口是易于出错的，同样，单独的指针(指向数组)必须依赖一些惯例才能让调用者知道它的大小(译注：数组元素个数)。
 
-##### Example
+##### 示例
 
-Consider:
+考虑:
 
-    void copy_n(const T* p, T* q, int n); // copy from [p:p+n) to [q:q+n)
+    void copy_n(const T* p, T* q, int n); // 将[p:p+n) 拷贝到 [q:q+n)
 
-What if there are fewer than `n` elements in the array pointed to by `q`? Then, we overwrite some probably unrelated memory.
-What if there are fewer than `n` elements in the array pointed to by `p`? Then, we read some probably unrelated memory.
-Either is undefined behavior and a potentially very nasty bug.
+如果`q`指向的数组中少于`n`个元素怎么办？然后，我们就可能覆写了一些不相关的内存；如果`p`指向的数组中少于`n`个元素怎么办？然后，我们就可能读了一些不相关的内存。要么是一个未定义的行为，要么就是一个潜在的严重bug
 
-##### Alternative
 
-Consider using explicit spans:
+##### 可选方法
+
+考虑使用显示的`span`:
 
     void copy(span<const T> r, span<T> r2); // copy r to r2
 
-##### Example, bad
+##### 糟糕的示例
 
-Consider:
+考虑:
 
     void draw(Shape* p, int n);  // poor interface; poor code
     Circle arr[10];
