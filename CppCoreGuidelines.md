@@ -1796,25 +1796,27 @@ If you can't use exceptions (e.g., because your code is full of old-style raw-po
 
 考虑:
 
-    void draw(Shape* p, int n);  // poor interface; poor code
+    void draw(Shape* p, int n);  // 糟糕的接口; 糟糕的代码
     Circle arr[10];
     // ...
     draw(arr, 10);
 
-Passing `10` as the `n` argument may be a mistake: the most common convention is to assume `[0:n)` but that is nowhere stated. Worse is that the call of `draw()` compiled at all: there was an implicit conversion from array to pointer (array decay) and then another implicit conversion from `Circle` to `Shape`. There is no way that `draw()` can safely iterate through that array: it has no way of knowing the size of the elements.
+传递`10`给参数`n`可能是错误的：最常见的习惯是假设`[0:n)`，但并没有地方说明这一点。更糟糕的是`draw()`调用的编译：有一个隐式从数组到指针的转换(数组衰退)，以及另一个从`Circle`到`Shape`的转换。`draw()`不能安全地遍历该数组：无法得知数组元素的数量。
 
-**Alternative**: Use a support class that ensures that the number of elements is correct and prevents dangerous implicit conversions. For example:
+**可选方法**: 使用一个支持类来确保元素的数量是正确的，并防止危险的隐式转换，例如:
 
     void draw2(span<Circle>);
     Circle arr[10];
     // ...
-    draw2(span<Circle>(arr));  // deduce the number of elements
-    draw2(arr);    // deduce the element type and array size
+    draw2(span<Circle>(arr));  // 推导出元素的个数
+    draw2(arr);    // 推导元素类型和数组大小
 
     void draw3(span<Shape>);
-    draw3(arr);    // error: cannot convert Circle[10] to span<Shape>
+    draw3(arr);    // 错误：不能将Circle[10] 转换到 span<Shape>
 
 This `draw2()` passes the same amount of information to `draw()`, but makes the fact that it is supposed to be a range of `Circle`s explicit. See ???.
+
+<!-- 这个`draw2()`将相同数量的信息传递给`draw()`，但这使得它应该是一个“Circle”的范围这一事实变得明确起来。? ? ?。 -->
 
 ##### Exception
 
