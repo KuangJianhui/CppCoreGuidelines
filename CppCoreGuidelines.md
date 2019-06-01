@@ -1814,27 +1814,24 @@ If you can't use exceptions (e.g., because your code is full of old-style raw-po
     void draw3(span<Shape>);
     draw3(arr);    // 错误：不能将Circle[10] 转换到 span<Shape>
 
-This `draw2()` passes the same amount of information to `draw()`, but makes the fact that it is supposed to be a range of `Circle`s explicit. See ???.
+`draw2()`将同样的数量信息传递给了`draw()`，它使得该信息就是`Circle`的范围这一假定明确起来，参见 ???。
 
-<!-- 这个`draw2()`将相同数量的信息传递给`draw()`，但这使得它应该是一个“Circle”的范围这一事实变得明确起来。? ? ?。 -->
+##### 例外
 
-##### Exception
+使用`zstring`和`czstring`来表示以`'\0'`结尾的C风格字符串，当这样做时，使用 [GSL](#GSL)的`string_span`来阻止错误发生。
 
-Use `zstring` and `czstring` to represent a C-style, zero-terminated strings.
-But when doing so, use `string_span` from the [GSL](#GSL) to prevent range errors.
+##### 实施
 
-##### Enforcement
+* (简单) ((边界)) 对所有依赖隐式转换数组到指针的表达式进行警告，zstring/czstring指针类型例外。
+* (简单) ((边界)) 对于指针类型表达式上的任何算术运算，如果运算结果为指针类型值，则发出警告，zstring/czstring指针类型例外。
 
-* (Simple) ((Bounds)) Warn for any expression that would rely on implicit conversion of an array type to a pointer type. Allow exception for zstring/czstring pointer types.
-* (Simple) ((Bounds)) Warn for any arithmetic operation on an expression of pointer type that results in a value of pointer type. Allow exception for zstring/czstring pointer types.
+### <a name="Ri-global-init"></a>I.22: 避免全局对象的复杂初始化
 
-### <a name="Ri-global-init"></a>I.22: Avoid complex initialization of global objects
+##### 原因
 
-##### Reason
+复杂的初始化可能会导致未定义的执行顺序。
 
-Complex initialization can lead to undefined order of execution.
-
-##### Example
+##### 示例
 
     // file1.c
 
@@ -1848,130 +1845,123 @@ Complex initialization can lead to undefined order of execution.
 
     const X x = g(y);   // read y; write x
 
-Since `x` and `y` are in different translation units the order of calls to `f()` and `g()` is undefined;
-one will access an uninitialized `const`.
-This shows that the order-of-initialization problem for global (namespace scope) objects is not limited to global *variables*.
+由于`x`和`y`在不同的翻译单元，`f()`和`g()`的调用顺序是不确定的，其中一个可能会访问一个未初始化的`const`，这也显示了全局(命名空间)对象的"初始化顺序"问题不局限于全局*变量*(译注:全局常量也会存在初始华顺序问题)。
 
 ##### Note
 
-Order of initialization problems become particularly difficult to handle in concurrent code.
-It is usually best to avoid global (namespace scope) objects altogether.
+初始化顺序问题在并发代码中变得尤其困难，通常最好是完全避免使用全局(命名空间)对象。
 
-##### Enforcement
+##### 实施
 
-* Flag initializers of globals that call non-`constexpr` functions
-* Flag initializers of globals that access `extern` objects
+* 标出没有调用`constexpr`函数的全局对象的初始化。
+* 标出访问`extern`对象的全局对象的初始化。
 
-### <a name="Ri-nargs"></a>I.23: Keep the number of function arguments low
+### <a name="Ri-nargs"></a>I.23: 保持较少的函数参数
 
-##### Reason
+##### 原因
 
-Having many arguments opens opportunities for confusion. Passing lots of arguments is often costly compared to alternatives.
+过多的参数容易引起迷惑，与其它方法相比，传递太多参数的成本通常更高。
 
-##### Discussion
+##### 讨论
 
-The two most common reasons why functions have too many parameters are:
+函数传递太多参数的两个最常见原因是：
 
-1. *Missing an abstraction.*
-   There is an abstraction missing, so that a compound value is being
-   passed as individual elements instead of as a single object that enforces an invariant.
-   This not only expands the parameter list, but it leads to errors because the component values
-   are no longer protected by an enforced invariant.
+1. *缺乏抽象*
 
-2. *Violating "one function, one responsibility."*
-   The function is trying to do more than one job and should probably be refactored.
+    由于缺乏抽象，所以复合值(compound value)作为独立的参数进行传递，而不是作为一个强制不变的对象，这(复合值)不仅仅是展开参数列表，也会由于不再受到强制不变式的保护而导致错误。
 
-##### Example
+2. *违反“函数单一职责”*
 
-The standard-library `merge()` is at the limit of what we can comfortably handle:
+    企图做超过一个工作的函数可能应当被重构。
+
+##### 示例
+
+标准库的`merge()`是我们能够轻松处理的极限(译注：参数个数太多):
 
     template<class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
     OutputIterator merge(InputIterator1 first1, InputIterator1 last1,
                          InputIterator2 first2, InputIterator2 last2,
                          OutputIterator result, Compare comp);
 
-Note that this is because of problem 1 above -- missing abstraction. Instead of passing a range (abstraction), STL passed iterator pairs (unencapsulated component values).
+注意，这是由于上述的问题1 -- *缺乏抽象*，STL传递了迭代器对(iterator pair)(未封装的组件值)，而不是传递范围(range)(抽象)。
 
-Here, we have four template arguments and six function arguments.
-To simplify the most frequent and simplest uses, the comparison argument can be defaulted to `<`:
+这里，我们有4个模板参数和6个函数参数，为了简化最常见和最简单的用法，比较参数默认为`<`:
 
     template<class InputIterator1, class InputIterator2, class OutputIterator>
     OutputIterator merge(InputIterator1 first1, InputIterator1 last1,
                          InputIterator2 first2, InputIterator2 last2,
                          OutputIterator result);
 
-This doesn't reduce the total complexity, but it reduces the surface complexity presented to many users.
-To really reduce the number of arguments, we need to bundle the arguments into higher-level abstractions:
+这并没有减少总的复杂性，但是它减少了呈现给许多用户的表面(接口)复杂性，为了真正减少参数的数量，我们需要将参数捆绑到更高层次的抽象中:
 
     template<class InputRange1, class InputRange2, class OutputIterator>
     OutputIterator merge(InputRange1 r1, InputRange2 r2, OutputIterator result);
 
-Grouping arguments into "bundles" is a general technique to reduce the number of arguments and to increase the opportunities for checking.
+将参数组合到"boundle"中是减少参数数量的通用技术，并增加了对其进行检查的机会。
 
 Alternatively, we could use concepts (as defined by the ISO TS) to define the notion of three types that must be usable for merging:
+
+或者，我们可以使用概念(concepts，由ISO技术规范定义)来定义三种类型(In1, In2, Out)的概念，这些类型必须可用于合并:
 
     Mergeable{In1, In2, Out}
     OutputIterator merge(In1 r1, In2 r2, Out result);
 
-##### Example
+##### 示例
 
-The safety Profiles recommend replacing
-
-    void f(int* some_ints, int some_ints_length);  // BAD: C style, unsafe
-
-with
+安全配置文件(safety profile)推荐使用
 
     void f(gsl::span<int> some_ints);              // GOOD: safe, bounds-checked
 
-Here, using an abstraction has safety and robustness benefits, and naturally also reduces the number of parameters.
+来替换
+
+    void f(int* some_ints, int some_ints_length);  // BAD: C style, unsafe
+
+这里，使用抽象能带来安全性和鲁棒性的收益，自然也能减少参数的数量。    
 
 ##### Note
 
-How many parameters are too many? Try to use fewer than four (4) parameters.
-There are functions that are best expressed with four individual parameters, but not many.
+多少参数才算太多？尝试不超过四个参数。有些函数最好用四个单独的参数来表示，但不是很多。
 
-**Alternative**: Use better abstraction: Group arguments into meaningful objects and pass the objects (by value or by reference).
+**可选方法**：使用更好的抽象：将参数分组到有意义的对象中，然后以传值来引用的方式来传递这些对象。
 
-**Alternative**: Use default arguments or overloads to allow the most common forms of calls to be done with fewer arguments.
+**可选方法**：使用默认参数或重载的方式来让最常见形式的调用只有很少的参数。
 
-##### Enforcement
+##### 实施
 
-* Warn when a function declares two iterators (including pointers) of the same type instead of a range or a view.
-* (Not enforceable) This is a philosophical guideline that is infeasible to check directly.
+* 发出警告，如果函数声明了两个同种类型的迭代器(含指针)，而不是范围(range)或视图(view)。
+* (无法强制) 这只是一种哲学意义上的指导方针，并不具有直接检查的可行性。
 
-### <a name="Ri-unrelated"></a>I.24: Avoid adjacent unrelated parameters of the same type
+### <a name="Ri-unrelated"></a>I.24: 避免邻近不相关的同类型参数
 
-##### Reason
+##### 原因
 
-Adjacent arguments of the same type are easily swapped by mistake.
+邻近同类型的参数很容易被错误地交换。
 
-##### Example, bad
+##### 糟糕的例子
 
-Consider:
+考虑:
 
     void copy_n(T* p, T* q, int n);  // copy from [p:p + n) to [q:q + n)
 
-This is a nasty variant of a K&R C-style interface. It is easy to reverse the "to" and "from" arguments.
-
-Use `const` for the "from" argument:
+这是一个K&R C风格接口的可恶变种， 容易弄反"to"和"from"两个参数。在`from`上使用`const`:
 
     void copy_n(const T* p, T* q, int n);  // copy from [p:p + n) to [q:q + n)
 
-##### Exception
+##### 例外
 
-If the order of the parameters is not important, there is no problem:
+如果两个参数的顺序无关紧要，就没有什么问题：
 
     int max(int a, int b);
 
-##### Alternative
+##### 可选
 
-Don't pass arrays as pointers, pass an object representing a range (e.g., a `span`):
+不要以指针的方式传递数组，传递代表范围的对象（如`span`）:
 
     void copy_n(span<const T> p, span<T> q);  // copy from p to q
 
-##### Alternative
+##### 可选
 
-Define a `struct` as the parameter type and name the fields for those parameters accordingly:
+定义一个`struct`作为参数类型，并相应地为这些参数命名字段:
 
     struct SystemParams {
         string config_file;
@@ -1980,24 +1970,23 @@ Define a `struct` as the parameter type and name the fields for those parameters
     };
     void initialize(SystemParams p);
 
-This tends to make invocations of this clear to future readers, as the parameters
-are often filled in by name at the call site.
+这使得将来的读者能够清楚地调用这些参数，因为这些参数通常是在调用站点(call site)上按名称填充的。
 
-##### Enforcement
+##### 实施
 
-(Simple) Warn if two consecutive parameters share the same type.
+(简单) 发出警告，如果两个相邻的参数具有相同的类型。
 
-### <a name="Ri-abstract"></a>I.25: Prefer abstract classes as interfaces to class hierarchies
+### <a name="Ri-abstract"></a>I.25: 侧重使用抽象类而不是类层次来作为接口
 
-##### Reason
+##### 原因
 
-Abstract classes are more likely to be stable than base classes with state.
+抽象类比具有状态的基类可能更稳定。
 
-##### Example, bad
+##### 糟糕的例子
 
-You just knew that `Shape` would turn up somewhere :-)
+你只知道`Shape`会在某些地方出现:-)
 
-    class Shape {  // bad: interface class loaded with data
+    class Shape {  // 糟糕: 接口类和数据一起加载
     public:
         Point center() const { return c; }
         virtual void draw() const;
@@ -2009,44 +1998,46 @@ You just knew that `Shape` would turn up somewhere :-)
         Color col;
     };
 
-This will force every derived class to compute a center -- even if that's non-trivial and the center is never used. Similarly, not every `Shape` has a `Color`, and many `Shape`s are best represented without an outline defined as a sequence of `Point`s. Abstract classes were invented to discourage users from writing such classes:
+这将迫使每个派生类都要计算中心点--即使是不重要的(译注：原文non-trivial-意义重要大，可能是笔误)，并且中心从未使用过。并非使用的`Shape`都有`Color`，并且很多`Shape`最好的表示并没有使用`Point`序列定义的轮廓，抽象类的出现并不鼓励用户写出这样的类：
 
-    class Shape {    // better: Shape is a pure interface
+    class Shape {    // better: Shape是纯接口
     public:
-        virtual Point center() const = 0;   // pure virtual functions
+        virtual Point center() const = 0;   // 纯虚函数
         virtual void draw() const = 0;
         virtual void rotate(int) = 0;
         // ...
-        // ... no data members ...
+        // ... 没有数据成员 ...
         // ...
         virtual ~Shape() = default;
     };
 
-##### Enforcement
+##### 实施
 
-(Simple) Warn if a pointer/reference to a class `C` is assigned to a pointer/reference to a base of `C` and the base class contains data members.
+(简单) 如果类`C`的指针/引用被赋值给具有数据成员的`C`的基类，则发出警告。
 
-### <a name="Ri-abi"></a>I.26: If you want a cross-compiler ABI, use a C-style subset
+### <a name="Ri-abi"></a>I.26: 如果想要跨编译器的ABI，则使用C风格的子集
 
-##### Reason
+##### 原因
 
-Different compilers implement different binary layouts for classes, exception handling, function names, and other implementation details.
+不同的编译实现了不同的类的二进制布局、异常处理、函数名字(name mangling)和其它的一些细节。
 
-##### Exception
+##### 例外
 
-You can carefully craft an interface using a few carefully selected higher-level C++ types. See ???.
+您可以使用精心选择的一些高级c++类型来精心设计接口，参见 ???。
 
-##### Exception
+##### 例外
 
-Common ABIs are emerging on some platforms freeing you from the more draconian restrictions.
+常见的ABI正在一些平台上出现，将您从更严格的限制中解放出来。
 
-##### Note
+##### 注意
 
-If you use a single compiler, you can use full C++ in interfaces. That may require recompilation after an upgrade to a new compiler version.
+如果使用单一编译器，则可以在接口中使用完整的C++，这可能需要在升级到新的编译器版本后重新编译。
 
-##### Enforcement
+##### 实施
 
 (Not enforceable) It is difficult to reliably identify where an interface forms part of an ABI.
+
+(不可强制)很难可靠地确定接口在何处构成ABI的一部分。
 
 ### <a name="Ri-pimpl"></a>I.27: For stable library ABI, consider the Pimpl idiom
 
