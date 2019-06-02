@@ -2035,40 +2035,36 @@ Alternatively, we could use concepts (as defined by the ISO TS) to define the no
 
 ##### 实施
 
-(Not enforceable) It is difficult to reliably identify where an interface forms part of an ABI.
-
 (不可强制)很难可靠地确定接口在何处构成ABI的一部分。
 
-### <a name="Ri-pimpl"></a>I.27: For stable library ABI, consider the Pimpl idiom
+### <a name="Ri-pimpl"></a>I.27: 使用Pimpl来达到稳定的ABI库
 
-##### Reason
+##### 原因
 
-Because private data members participate in class layout and private member functions participate in overload resolution, changes to those
-implementation details require recompilation of all users of a class that uses them. A non-polymorphic interface class holding a pointer to
-implementation (Pimpl) can isolate the users of a class from changes in its implementation at the cost of an indirection.
+由于私有数据成员影响类布局，而私有成员函数参与重载解析，因此对这些实现细节的更改需要类的所有用户重新编译。持有指向实现指针(Pimpl)的非多态接口类可以将类的用户与其实现中的更改隔离开来，代价是不再直接(译注：多了一层封装)。
 
 ##### Example
 
-interface (widget.h)
+接口 (widget.h)
 
     class widget {
         class impl;
         std::unique_ptr<impl> pimpl;
     public:
-        void draw(); // public API that will be forwarded to the implementation
-        widget(int); // defined in the implementation file
-        ~widget();   // defined in the implementation file, where impl is a complete type
+        void draw(); // 转发到实现的公共API
+        widget(int); // 在实现文件中进行定义
+        ~widget();   // 在实现文件中进行定义，在那里"impl"是一个完整的类型
         widget(widget&&) = default;
         widget(const widget&) = delete;
-        widget& operator=(widget&&); // defined in the implementation file
+        widget& operator=(widget&&); // 在实现文件中进行定义
         widget& operator=(const widget&) = delete;
     };
 
 
-implementation (widget.cpp)
+实现 (widget.cpp)
 
     class widget::impl {
-        int n; // private data
+        int n; // 私有数据
     public:
         void draw(const widget& w) { /* ... */ }
         impl(int n) : n(n) {}
@@ -2080,27 +2076,21 @@ implementation (widget.cpp)
 
 ##### Notes
 
-See [GOTW #100](https://herbsutter.com/gotw/_100/) and [cppreference](http://en.cppreference.com/w/cpp/language/pimpl) for the trade-offs and additional implementation details associated with this idiom.
+参见[GOTW #100](https://herbsutter.com/gotw/_100/)和[cppreference](http://en.cppreference.com/w/cpp/language/pimpl)了解与此习惯用法相关的权衡和其他实现细节。
 
-##### Enforcement
+##### 实施
 
-(Not enforceable) It is difficult to reliably identify where an interface forms part of an ABI.
+(不可强制)很难可靠地确定接口在何处构成ABI的一部分。
 
-### <a name="Ri-encapsulate"></a>I.30: Encapsulate rule violations
+### <a name="Ri-encapsulate"></a>I.30: 封装违反规则的行为
 
-##### Reason
+##### 原因
 
-To keep code simple and safe.
-Sometimes, ugly, unsafe, or error-prone techniques are necessary for logical or performance reasons.
-If so, keep them local, rather than "infecting" interfaces so that larger groups of programmers have to be aware of the
-subtleties.
-Implementation complexity should, if at all possible, not leak through interfaces into user code.
+为了让代码操持简洁和安全。有时，丑陋、不安全或易于出错的技术对逻辑或性能而言是必不可少的，如果是这样，将它们控制在局部，而不是"感染"接口，以便更多的程序员能理解这些代码的精髓。如果可以的话，实现的复杂性应该不要通过接口泄漏给用户代码。
 
-##### Example
+##### 示例
 
-Consider a program that, depending on some form of input (e.g., arguments to `main`), should consume input
-from a file, from the command line, or from standard input.
-We might write
+考虑一个依赖于某些形式输入(如`main`的参数)的程序，输入可能是一个文件、命令行、或标准输入，我们可能会这样写：
 
     bool owned;
     owner<istream*> inp;
@@ -2111,22 +2101,13 @@ We might write
     }
     istream& in = *inp;
 
-This violated the rule [against uninitialized variables](#Res-always),
-the rule against [ignoring ownership](#Ri-raw),
-and the rule [against magic constants](#Res-magic).
-In particular, someone has to remember to somewhere write
+违反了规则 [未初始化的变量](#Res-always)、[忽略所有权](#Ri-raw)和[魔术常量(magic constant)](#Res-magic)。特别是，一些人需要记住在某些地方写下：
 
     if (owned) delete inp;
 
-We could handle this particular example by using `unique_ptr` with a special deleter that does nothing for `cin`,
-but that's complicated for novices (who can easily encounter this problem) and the example is an example of a more general
-problem where a property that we would like to consider static (here, ownership) needs infrequently be addressed
-at run time.
-The common, most frequent, and safest examples can be handled statically, so we don't want to add cost and complexity to those.
-But we must also cope with the uncommon, less-safe, and necessarily more expensive cases.
-Such examples are discussed in [[Str15]](http://www.stroustrup.com/resource-model.pdf).
+对于这个特殊的例子，我们可以使用`unique_ptr`，配合一个可以对`cin`不做任何处理的删除器(deleter)。但这对新手(经常会遇到这种问题)程序员来说太复杂了，但这也是一个更普遍的问题的例子 -- 我们想要静态(这里是所有权)需求的属性在运行时很少被处理。最常见、最常见和最安全的示例可以静态处理，因此我们不想给这些示例增加成本和复杂性，但是我们也必须要处理不怎么常见，不太安全以及需求更加昂贵的例子，这些例子的讨论参见[[Str15]](http://www.stroustrup.com/resource-model.pdf)。
 
-So, we write a class
+所以，我们这样写一个类：
 
     class Istream { [[gsl::suppress(lifetime)]]
     public:
@@ -2141,28 +2122,26 @@ So, we write a class
         istream* inp = &cin;
     };
 
-Now, the dynamic nature of `istream` ownership has been encapsulated.
-Presumably, a bit of checking for potential errors would be added in real code.
+现在，`istream`所有权的动态本质已经被封装，或许，在实际代码中将会添加一些检查潜在错误的功能。
 
-##### Enforcement
+##### 实施
 
-* Hard, it is hard to decide what rule-breaking code is essential
+* 很难，很难决定什么违反规则的代码是必要的
 * Flag rule suppression that enable rule-violations to cross interfaces
 
-# <a name="S-functions"></a>F: Functions
+# <a name="S-functions"></a>F: 函数
 
-A function specifies an action or a computation that takes the system from one consistent state to the next. It is the fundamental building block of programs.
+函数指将系统从一个(一致)状态带到下一个(一致状态)的操作或计算，它是程序的基本构件。
 
-It should be possible to name a function meaningfully, to specify the requirements of its argument, and clearly state the relationship between the arguments and the result. An implementation is not a specification. Try to think about what a function does as well as about how it does it.
-Functions are the most critical part in most interfaces, so see the interface rules.
+应该可以对函数进行有意义的命名，指定参数的需求，以及明确指明参数和返回值之间的关系。函数的实现不是一个技术规范，尝试思考一个函数要做什么，以及怎么做。函数在大多数接口在都是最重要的部分，参见接口规则部分。
 
-Function rule summary:
+函数规则总结：
 
-Function definition rules:
+函数定义规则：
 
-* [F.1: "Package" meaningful operations as carefully named functions](#Rf-package)
-* [F.2: A function should perform a single logical operation](#Rf-logical)
-* [F.3: Keep functions short and simple](#Rf-single)
+* [F.1: 在函数名字中表达函数的意图](#Rf-package)
+* [F.2: 一个函数应该只执行一个逻辑操作](#Rf-logical)
+* [F.3: 保持函数简短](#Rf-single)
 * [F.4: If a function may have to be evaluated at compile time, declare it `constexpr`](#Rf-constexpr)
 * [F.5: If a function is very small and time-critical, declare it inline](#Rf-inline)
 * [F.6: If your function may not throw, declare it `noexcept`](#Rf-noexcept)
@@ -2171,6 +2150,7 @@ Function definition rules:
 * [F.9: Unused parameters should be unnamed](#Rf-unused)
 
 Parameter passing expression rules:
+参数表达
 
 * [F.15: Prefer simple and conventional ways of passing information](#Rf-conventional)
 * [F.16: For "in" parameters, pass cheaply-copied types by value and others by reference to `const`](#Rf-in)
@@ -2181,7 +2161,7 @@ Parameter passing expression rules:
 * [F.21: To return multiple "out" values, prefer returning a struct or tuple](#Rf-out-multi)
 * [F.60: Prefer `T*` over `T&` when "no argument" is a valid option](#Rf-ptr-ref)
 
-Parameter passing semantic rules:
+参数传递表达式规则：
 
 * [F.22: Use `T*` or `owner<T*>` to designate a single object](#Rf-ptr)
 * [F.23: Use a `not_null<T>` to indicate that "null" is not a valid value](#Rf-nullptr)
@@ -2190,7 +2170,7 @@ Parameter passing semantic rules:
 * [F.26: Use a `unique_ptr<T>` to transfer ownership where a pointer is needed](#Rf-unique_ptr)
 * [F.27: Use a `shared_ptr<T>` to share ownership](#Rf-shared_ptr)
 
-<a name="Rf-value-return"></a>Value return semantic rules:
+<a name="Rf-value-return"></a>值返回语义规则：
 
 * [F.42: Return a `T*` to indicate a position (only)](#Rf-return-ptr)
 * [F.43: Never (directly or indirectly) return a pointer or a reference to a local object](#Rf-dangle)
@@ -2200,7 +2180,7 @@ Parameter passing semantic rules:
 * [F.47: Return `T&` from assignment operators](#Rf-assignment-op)
 * [F.48: Don't `return std::move(local)`](#Rf-return-move-local)
 
-Other function rules:
+其他函数规则:
 
 * [F.50: Use a lambda when a function won't do (to capture local variables, or to write a local function)](#Rf-capture-vs-overload)
 * [F.51: Where there is a choice, prefer default arguments over overloading](#Rf-default-args)
@@ -2209,22 +2189,22 @@ Other function rules:
 * [F.54: If you capture `this`, capture all variables explicitly (no default capture)](#Rf-this-capture)
 * [F.55: Don't use `va_arg` arguments](#F-varargs)
 
-Functions have strong similarities to lambdas and function objects.
+函数与lambda和函数对象有很强的相似性。
 
-**See also**: [C.lambdas: Function objects and lambdas](#SS-lambdas)
+**参见**: [C.lambdas: 函数对象和lambda](#SS-lambdas)
 
-## <a name="SS-fct-def"></a>F.def: Function definitions
+## <a name="SS-fct-def"></a>F.def: 函数的定义
 
-A function definition is a function declaration that also specifies the function's implementation, the function body.
+函数定义是一个函数声明，以及指定函数的实现，即函数体。
 
-### <a name="Rf-package"></a>F.1: "Package" meaningful operations as carefully named functions
 
-##### Reason
+### <a name="Rf-package"></a>F.1: 在函数名字中表达函数的意图
 
-Factoring out common code makes code more readable, more likely to be reused, and limit errors from complex code.
-If something is a well-specified action, separate it out from its surrounding code and give it a name.
+##### 原因
 
-##### Example, don't
+分解出公共代码可以使代码更具可读性，更容易重用，并限制来自复杂代码的错误。如果某个操作是一个指定良好的操作，则将其与周围的代码分开，并为其命名。
+
+##### 示例，不要这样做！
 
     void read_and_print(istream& is)    // read and print an int
     {
@@ -2235,66 +2215,58 @@ If something is a well-specified action, separate it out from its surrounding co
             cerr << "no int on input\n";
     }
 
-Almost everything is wrong with `read_and_print`.
-It reads, it writes (to a fixed `ostream`), it writes error messages (to a fixed `ostream`), it handles only `int`s.
-There is nothing to reuse, logically separate operations are intermingled and local variables are in scope after the end of their logical use.
-For a tiny example, this looks OK, but if the input operation, the output operation, and the error handling had been more complicated the tangled
-mess could become hard to understand.
+函数`read_and_print`几乎做错了所有的事情。
+该函数读取`int`，然后写入`int`(到固定的`ostream`)，它也将错误信息写入(到固定的`ostream`)，但是该函数只处理`int`。该函数没有什么可重用的，逻辑上相互独立的操作混杂在一起，局部变量(`x`)超出了它们逻辑上的使用范围。对于很小的例子，看起来没有问题，但是，如果输入/输出操作以及错误处理变得更加复杂的话，混乱可能会让代码变得难以理解。
 
 ##### Note
 
-If you write a non-trivial lambda that potentially can be used in more than one place, give it a name by assigning it to a (usually non-local) variable.
+如果要编写一个可能在多个地方使用的非平凡的(non-trivial)lambda，那么通过将其分配给一个变量(通常是非本地的)来为它命名。
 
-##### Example
+##### 示例
 
     sort(a, b, [](T x, T y) { return x.rank() < y.rank() && x.value() < y.value(); });
 
-Naming that lambda breaks up the expression into its logical parts and provides a strong hint to the meaning of the lambda.
+命名这个lambda将表达式分解为它的逻辑部分和lambda(已命名的)部分，并为lambda的含义提供了一个强大的提示。
 
     auto lessT = [](T x, T y) { return x.rank() < y.rank() && x.value() < y.value(); };
 
     sort(a, b, lessT);
     find_if(a, b, lessT);
 
-The shortest code is not always the best for performance or maintainability.
+最短的代码并不总是能带来最好的性能和可维护性。
 
-##### Exception
+##### 例外
 
-Loop bodies, including lambdas used as loop bodies, rarely need to be named.
-However, large loop bodies (e.g., dozens of lines or dozens of pages) can be a problem.
-The rule [Keep functions short and simple](#Rf-single) implies "Keep loop bodies short."
-Similarly, lambdas used as callback arguments are sometimes non-trivial, yet unlikely to be reusable.
+循环体，包括用作循环体的lambda很少需要被命名，然而，大的循环体(例如，有很多行或页)可能是一个问题，规则[保持函数简单而短小](#Rf-single)暗示者“保持循环体短小”。同样地，被用作回调参数的lambda有时也是非平凡的，也不可能被复用。
 
-##### Enforcement
+##### 实施
 
-* See [Keep functions short and simple](#Rf-single)
-* Flag identical and very similar lambdas used in different places.
+* 参见 [保持函数简单而短小](#Rf-single)
+* 标记在不同地方使用的相同和非常相似的lambda。
 
-### <a name="Rf-logical"></a>F.2: A function should perform a single logical operation
+### <a name="Rf-logical"></a>F.2: 一个函数应该只执行一个逻辑操作
 
-##### Reason
+##### 原因
 
-A function that performs a single operation is simpler to understand, test, and reuse.
+具有单一职责的函数易于理解，测试和复用。
 
-##### Example
+##### 示例
 
-Consider:
-
-    void read_and_print()    // bad
+    void read_and_print()    // 糟糕
     {
         int x;
         cin >> x;
-        // check for errors
+        // 错误检查
         cout << x << "\n";
     }
 
-This is a monolith that is tied to a specific input and will never find another (different) use. Instead, break functions up into suitable logical parts and parameterize:
+这是一个与特定输入绑定的整体，永远不会找到其他(不同的)用途。相反，将函数分解成合适的逻辑部分并将不同部分参数化:
 
-    int read(istream& is)    // better
+    int read(istream& is)    // 更好
     {
         int x;
         is >> x;
-        // check for errors
+        // 错误检查
         return x;
     }
 
@@ -2303,7 +2275,7 @@ This is a monolith that is tied to a specific input and will never find another 
         os << x << "\n";
     }
 
-These can now be combined where needed:
+这些可以在需要的地方组合在一起：
 
     void read_and_print()
     {
@@ -2312,6 +2284,8 @@ These can now be combined where needed:
     }
 
 If there was a need, we could further templatize `read()` and `print()` on the data type, the I/O mechanism, the response to errors, etc. Example:
+
+如果有需要，我们可以进一步模板化`read()`和`print`的数据类型、I/O机制和错误处理等，如：
 
     auto read = [](auto& input, auto& value)    // better
     {
@@ -2324,22 +2298,19 @@ If there was a need, we could further templatize `read()` and `print()` on the d
         output << value << "\n";
     }
 
-##### Enforcement
+##### 实施
 
-* Consider functions with more than one "out" parameter suspicious. Use return values instead, including `tuple` for multiple return values.
-* Consider "large" functions that don't fit on one editor screen suspicious. Consider factoring such a function into smaller well-named suboperations.
-* Consider functions with 7 or more parameters suspicious.
+* 考虑具有多个"out"参数的可疑函数，使用返回值来替代，包括使用`tuple`来返回多个值。
+* 考虑大到超过一个编辑器屏幕的可疑函数，考虑将函数分解成小巧且命名良好的子操作。
+* 考虑具有7个或更多参数的可疑函数。
 
-### <a name="Rf-single"></a>F.3: Keep functions short and simple
+### <a name="Rf-single"></a>F.3: 保持函数简短
 
 ##### Reason
 
-Large functions are hard to read, more likely to contain complex code, and more likely to have variables in larger than minimal scopes.
-Functions with complex control structures are more likely to be long and more likely to hide logical errors
+大函数难以阅读，很可能包含复杂代码，也很多可能包含超过最小作用域的变量。具有复杂控制结构的函数更有可能很长，也更有可能隐藏逻辑错误。
 
-##### Example
-
-Consider:
+##### 示例
 
     double simple_func(double val, int flag1, int flag2)
         // simple_func: takes a value and calculates the expected ASIC output,
@@ -2369,11 +2340,9 @@ Consider:
         return finalize(intermediate, 0.);
     }
 
-This is too complex.
-How would you know if all possible alternatives have been correctly handled?
-Yes, it breaks other rules also.
+这个太复杂了，你如何才能知道是否所有可能的情况都被正确处理了？是的，这也打破了其它规则。
 
-We can refactor:
+我们可以重构:
 
     double func1_muon(double val, int flag)
     {
@@ -2399,62 +2368,55 @@ We can refactor:
 
 ##### Note
 
-"It doesn't fit on a screen" is often a good practical definition of "far too large."
-One-to-five-line functions should be considered normal.
+"一屏无法放下"通常是“太大”的一个好的实践，1到5行的函数应当被当作是正常的。
 
 ##### Note
 
-Break large functions up into smaller cohesive and named functions.
-Small simple functions are easily inlined where the cost of a function call is significant.
+将大型函数分解为较小的内聚和命名的函数，简单的小函数很容易内联到函数调用成本很高的地方。
 
-##### Enforcement
+##### 实施
 
-* Flag functions that do not "fit on a screen."
-  How big is a screen? Try 60 lines by 140 characters; that's roughly the maximum that's comfortable for a book page.
-* Flag functions that are too complex. How complex is too complex?
-  You could use cyclomatic complexity. Try "more than 10 logical path through." Count a simple switch as one path.
+* 标记一屏无法显示的函数，一屏有多大？试试60行，每行140个字符，这大概是一页书所能接受的最大限度。
+* 标出太复杂的函数，多复杂才算复杂？ 您可以使用环路复杂度(cyclomatic complexity)，试试"超过10条逻辑路径"，将一个简单的分支(switch)算作一个路径。
 
-### <a name="Rf-constexpr"></a>F.4: If a function may have to be evaluated at compile time, declare it `constexpr`
+### <a name="Rf-constexpr"></a>F.4: 如果函数可能需要在编译时被求值，声明它为`constexpr`
 
-##### Reason
+##### 原因
 
- `constexpr` is needed to tell the compiler to allow compile-time evaluation.
+ 当告诉编译器允许在编译时求值时，`constexpr`是需要的。
 
-##### Example
+##### 示例
 
-The (in)famous factorial:
+(非)著名的阶乘：
 
     constexpr int fac(int n)
     {
-        constexpr int max_exp = 17;      // constexpr enables max_exp to be used in Expects
-        Expects(0 <= n && n < max_exp);  // prevent silliness and overflow
+        constexpr int max_exp = 17;      // constexpr让max_exp可以在Expects中使用
+        Expects(0 <= n && n < max_exp);  // 防止愚蠢的输入(n<0)和溢出
         int x = 1;
         for (int i = 2; i <= n; ++i) x *= i;
         return x;
     }
 
-This is C++14.
-For C++11, use a recursive formulation of `fac()`.
+这是C++14的用法，对于C++11，请使用递归形式的`fac()`。
 
 ##### Note
 
-`constexpr` does not guarantee compile-time evaluation;
-it just guarantees that the function can be evaluated at compile time for constant expression arguments if the programmer requires it or the compiler decides to do so to optimize.
+`constexpr`并不能保证会在编译时求值，它只是保证，如果程序员需要或编译器决定这样做可以优化时，那么可以在编译时为常量表达式参数进行求值。
 
     constexpr int min(int x, int y) { return x < y ? x : y; }
 
     void test(int v)
     {
-        int m1 = min(-1, 2);            // probably compile-time evaluation
-        constexpr int m2 = min(-1, 2);  // compile-time evaluation
-        int m3 = min(-1, v);            // run-time evaluation
-        constexpr int m4 = min(-1, v);  // error: cannot evaluate at compile time
+        int m1 = min(-1, 2);            // 可能是在编译时求值
+        constexpr int m2 = min(-1, 2);  // 编译时求值
+        int m3 = min(-1, v);            // 运行时求值
+        constexpr int m4 = min(-1, v);  // 错误：不能在运行时求值(译注：编译时无法知道v的值)
     }
 
 ##### Note
 
-Don't try to make all functions `constexpr`.
-Most computation is best done at run time.
+不要尝试将所有函数声明为`constexpr`，大多的计算最好是在运行时做。
 
 ##### Note
 
@@ -19794,7 +19756,7 @@ Also, this style is a temptation to use the [goto exit](#Rnr-goto-exit) non-rule
 
 ##### Alternative
 
-* Keep functions short and simple
+* 保持函数简短
 * Feel free to use multiple `return` statements (and to throw exceptions).
 
 ### <a name="Rnr-no-exceptions"></a>NR.3: Don't: Don't use exceptions
