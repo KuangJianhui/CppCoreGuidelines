@@ -2420,68 +2420,59 @@ If there was a need, we could further templatize `read()` and `print()` on the d
 
 ##### Note
 
-Any API that may eventually depend on high-level run-time configuration or
-business logic should not be made `constexpr`. Such customization can not be
-evaluated by the compiler, and any `constexpr` functions that depended upon
-that API would have to be refactored or drop `constexpr`.
+任何最终依赖高层运行时配置或业务逻辑的API都不应该被声明为`constexpr`，编译器无法对这些定义进行求值，任何有依赖这类API的`constexpr`函数都应当被重构或放弃`constexpr`。（译注：`constexpr`应当只依赖`constexpr`类型的函数）
 
-##### Enforcement
+##### 实施
 
-Impossible and unnecessary.
-The compiler gives an error if a non-`constexpr` function is called where a constant is required.
+(强制实施)不可能，也没有必要。当在需要常量的地方调用一个非`constexpr`函数时，编译器会给出报错。
 
-### <a name="Rf-inline"></a>F.5: If a function is very small and time-critical, declare it `inline`
+### <a name="Rf-inline"></a>F.5: 如果函数短小且时间敏感，则将其声明为`inline`
 
-##### Reason
+##### 原因
 
-Some optimizers are good at inlining without hints from the programmer, but don't rely on it.
-Measure! Over the last 40 years or so, we have been promised compilers that can inline better than humans without hints from humans.
-We are still waiting.
-Specifying `inline` encourages the compiler to do a better job.
+有些编译器很擅长在没有程序员提示的情况下进行内联(inline)，不过不要依赖于此。测量！在过去40年的时间里，我们都被承诺说编译器可以比人类更擅长在没有提示的情况下进行内联，但是，我们还在等待这种承诺，显示地指定`inline`可以让编译器更好地工作。
 
-##### Example
+##### 示例
 
     inline string cat(const string& s, const string& s2) { return s + s2; }
 
-##### Exception
+##### 例外
 
-Do not put an `inline` function in what is meant to be a stable interface unless you are certain that it will not change.
-An inline function is part of the ABI.
+不要把一个`inline`函数放在一个稳定的接口中，除非你确定它不会改变，因为内联函数也是ABI的一部分（译注：如果更改了inline函数，可能会导致ABI中已经编译的部分计算结果错误）。
 
-##### Note
+##### 注意
 
-`constexpr` implies `inline`.
+`constexpr` 暗示着 `inline`。
 
-##### Note
+##### 注意
 
-Member functions defined in-class are `inline` by default.
+在类中定义的成员函数默认是内联的。
 
-##### Exception
+##### 例外
 
-Template functions (incl. template member functions) are normally defined in headers and therefore inline.
+模板函数(包括模板成员函数)通常在头文件中定义，因此也是内联的。
 
-##### Enforcement
+##### 实施
 
-Flag `inline` functions that are more than three statements and could have been declared out of line (such as class member functions).
+将超过3行语句和可能在其它地方声明或定义(如类成员函数)的函数标记为`inline`。
 
-### <a name="Rf-noexcept"></a>F.6: If your function may not throw, declare it `noexcept`
+### <a name="Rf-noexcept"></a>F.6: 如果函数不会抛出异常，将其声明为`noexcept`
 
-##### Reason
+##### 原因
 
 If an exception is not supposed to be thrown, the program cannot be assumed to cope with the error and should be terminated as soon as possible. Declaring a function `noexcept` helps optimizers by reducing the number of alternative execution paths. It also speeds up the exit after failure.
 
 ##### Example
 
-Put `noexcept` on every function written completely in C or in any other language without exceptions.
-The C++ Standard Library does that implicitly for all functions in the C Standard Library.
+将`noexcept`放到所有完全使用C或其它不支持异常的语言所写的函数上，C++标准库隐式地为所有C标准库函数做了这些。
 
 ##### Note
 
-`constexpr` functions can throw when evaluated at run time, so you may need `noexcept` for some of those.
+`constexpr`函数在运行时也可能抛出异常，所以也可能也需要给这些函数加上`noexcept`。
 
 ##### Example
 
-You can use `noexcept` even on functions that can throw:
+甚至可以在抛出异常的函数上使用`noexcept`：
 
     vector<string> collect(istream& is) noexcept
     {
