@@ -2482,151 +2482,134 @@ If an exception is not supposed to be thrown, the program cannot be assumed to c
         return res;
     }
 
-If `collect()` runs out of memory, the program crashes.
-Unless the program is crafted to survive memory exhaustion, that may be just the right thing to do;
-`terminate()` may generate suitable error log information (but after memory runs out it is hard to do anything clever).
+如果`collect()`运行到内存不足，程序就是崩溃，除非程序是精心设计的能在耗尽内存后还能生存，这可以也正是我们要做的事情。`terminate()`或许可以生成合适的错误日志信息(但是，当内存不足时很难做任何有意义的事情)。
 
 ##### Note
 
-You must be aware of the execution environment that your code is running when
-deciding whether to tag a function `noexcept`, especially because of the issue
-of throwing and allocation.  Code that is intended to be perfectly general (like
-the standard library and other utility code of that sort) needs to support
-environments where a `bad_alloc` exception may be handled meaningfully.
-However, most programs and execution environments cannot meaningfully
-handle a failure to allocate, and aborting the program is the cleanest and
-simplest response to an allocation failure in those cases.  If you know that
-your application code cannot respond to an allocation failure, it may be
-appropriate to add `noexcept` even on functions that allocate.
+当在决定是否给一个函数标记`noexcept`时，你必须清楚代码所运行的执行环境，特别是异常抛出和(资源/内存)分配问题。完美而通用的代码(如，标准库和其它工具代码之类)需要支持这种环境，在那里异常`bad_alloc`可能被有意义的处理。然而，大多数的程序无法有意义地处理分配失败问题，这种情况下，直接退出程序是最直观和简单的方式。如果你清楚你的应用代码无法对分配失败作出响应，或许，最好在分配函数上加上`noexcept`。
 
-Put another way: In most programs, most functions can throw (e.g., because they
-use `new`, call functions that do, or use library functions that reports failure
-by throwing), so don't just sprinkle `noexcept` all over the place without
-considering whether the possible exceptions can be handled.
+换句话说：在大多数代码中，大多数的函数可以抛出异常(例如，因为它们使用了`new`，调用了使用了`new`的函数，或者使用了以异常进行报错的库函数)，所以不要在没有考虑可能的异常是否能被处理的情况下就在所有地方放上`noexcept`。（译注：能处理异常的地方尽量去处理，不能处理的地方再使用`noexcept`）
 
-`noexcept` is most useful (and most clearly correct) for frequently used,
-low-level functions.
+在经常使用的代码和底层代码上，`noexcept`才是最为有用的(和最明显正确的)。
 
 ##### Note
 
-Destructors, `swap` functions, move operations, and default constructors should never throw.
-See also [C.44](#Rc-default00).
+析构函数，`swap`函数，移动操作，以及默认构造函数永远不应该抛出异常，也参见[C.44](#Rc-default00)。
 
 ##### Enforcement
 
-* Flag functions that are not `noexcept`, yet cannot throw.
-* Flag throwing `swap`, `move`, destructors, and default constructors.
+<!-- 逗号应当替换成顿号  -->
+* 标记不是`noexcept`，但又不会抛出异常的函数。
+* 标记出会抛出异常的`swap`，`move`，析构函数和默认构造函数。
 
-### <a name="Rf-smart"></a>F.7: For general use, take `T*` or `T&` arguments rather than smart pointers
+### <a name="Rf-smart"></a>F.7: 为了更通用，使用`T*`或`T&`而不是智能指针
 
-##### Reason
+##### 原因
 
-Passing a smart pointer transfers or shares ownership and should only be used when ownership semantics are intended (see [R.30](#Rr-smartptrparam)).
-Passing by smart pointer restricts the use of a function to callers that use smart pointers.
-Passing a shared smart pointer (e.g., `std::shared_ptr`) implies a run-time cost.
+应当只有为了所有权语义时才使用智能指针来转移或共享所有权（见[R.30](#Rr-smartptrparam)）。
+传递智能指针限制了函数的使用，只有当调用者也使用了智能指针才可以。
+传递共享的(shared)智能指针(`std::shared_ptr`)也是有运行时消耗的。
 
-##### Example
+##### 示例
 
-    // accepts any int*
+    // 接受任意的int*
     void f(int*);
 
-    // can only accept ints for which you want to transfer ownership
+    // 只接受你想要转移所有权的ints
     void g(unique_ptr<int>);
 
-    // can only accept ints for which you are willing to share ownership
+    // 只接受你想要共享所有权的ints
     void g(shared_ptr<int>);
 
-    // doesn't change ownership, but requires a particular ownership of the caller
+    // 不改变所有权，但需要者的特定所有权
     void h(const unique_ptr<int>&);
 
-    // accepts any int
+    // 接受任意的int
     void h(int&);
 
-##### Example, bad
+##### 糟糕的示例
 
-    // callee
+    // 被调用方
     void f(shared_ptr<widget>& w)
     {
         // ...
-        use(*w); // only use of w -- the lifetime is not used at all
+        use(*w); // 只所用了w，它的生命周期压根没有被使用到
         // ...
     };
 
-See further in [R.30](#Rr-smartptrparam).
+更深入请参考 [R.30](#Rr-smartptrparam).
 
 ##### Note
 
-We can catch dangling pointers statically, so we don't need to rely on resource management to avoid violations from dangling pointers.
+我们可以静态地捕捉到悬垂指针，所以不需要依赖于资源管理来避免悬垂指针。
 
-**See also**:
+**也参见**:
 
-* [Prefer `T*` over `T&` when "no argument" is a valid option](#Rf-ptr-ref)
-* [Smart pointer rule summary](#Rr-summary-smartptrs)
+* [当"没有参数"是一个合法选项是，更倾向于`T*`而不是`T&`](#Rf-ptr-ref)
+* [智能指针规则总结](#Rr-summary-smartptrs)
 
-##### Enforcement
+##### 实施
 
-Flag a parameter of a smart pointer type (a type that overloads `operator->` or `operator*`) for which the ownership semantics are not used;
-that is
+标出参数是智能指针类型(重载了`operator->`或`operator*`的类型)，但是所有权语义没有被用到的(函数)，那是：
 
-* copyable but never copied/moved from or movable but never moved
-* and that is never modified or passed along to another function that could do so.
+* 可复制但是从未被复制/移动，或可移动但是从未被移动。
+* 从未被修改，或传递到其它也可能这样做的函数。
 
-### <a name="Rf-pure"></a>F.8: Prefer pure functions
+### <a name="Rf-pure"></a>F.8: 优先使用纯函数(pure function)
 
-##### Reason
+##### 原因
 
-Pure functions are easier to reason about, sometimes easier to optimize (and even parallelize), and sometimes can be memoized.
+纯函数更容易理解，更容易优化(甚至并行化)，以及有时可以备注(memoized)。
 
-##### Example
+##### 示例
 
     template<class T>
     auto square(T t) { return t * t; }
 
-##### Enforcement
+##### 实施
 
-Not possible.
+不可能强制实施
 
-### <a name="Rf-unused"></a>F.9: Unused parameters should be unnamed
+### <a name="Rf-unused"></a>F.9: 未使用的参数应该是匿名的
 
-##### Reason
+##### 原因
 
-Readability.
-Suppression of unused parameter warnings.
+可读性，抑制警告未使用的参数。 (译注：编译器会对未使用的参数发出警告，匿名参数可以解决这个问题)
 
-##### Example
+##### 示例
 
-    X* find(map<Blob>& m, const string& s, Hint);   // once upon a time, a hint was used
+    X* find(map<Blob>& m, const string& s, Hint);   // 曾几何时使用过Hint，但是现在不再使用了
 
 ##### Note
 
-Allowing parameters to be unnamed was introduced in the early 1980 to address this problem.
+20世纪80年代早期引入了匿名参数来解决这个问题。
 
-##### Enforcement
+##### 实施
 
-Flag named unused parameters.
+标出未使用的命名参数。
 
-## <a name="SS-call"></a>F.call: Parameter passing
+## <a name="SS-call"></a>F.call: 参数传递
 
-There are a variety of ways to pass parameters to a function and to return values.
+有很多方法来向函数传参和返回值。
 
-### <a name="Rf-conventional"></a>F.15: Prefer simple and conventional ways of passing information
+### <a name="Rf-conventional"></a>F.15: 使用简单而传统的方法来传递信息
 
-##### Reason
+##### 原因
 
-Using "unusual and clever" techniques causes surprises, slows understanding by other programmers, and encourages bugs.
-If you really feel the need for an optimization beyond the common techniques, measure to ensure that it really is an improvement, and document/comment because the improvement may not be portable.
+使用“不寻常的和聪明的”技巧会导致意外，增加其他程序员的理解难度，更可能引入bug。
+如果你真的觉得需要一个常见的技术之外优化技术，测量以确保它确实是一个改进，写好文档和注释，因为这个改进可能是不可移植的。
 
-The following tables summarize the advice in the following Guidelines, F.16-21.
+下面的表格总结了F.16-21的建议。
 
-Normal parameter passing:
+普通的参数传递：
 
-![Normal parameter passing table](./param-passing-normal.png "Normal parameter passing")
+![普通的参数传递](./param-passing-normal.png "Normal parameter passing")
 
-Advanced parameter passing:
+高级的参数传递:
 
-![Advanced parameter passing table](./param-passing-advanced.png "Advanced parameter passing")
+![高级的参数传递](./param-passing-advanced.png "Advanced parameter passing")
 
-Use the advanced techniques only after demonstrating need, and document that need in a comment.
+只有在确认需求之后才使用高级技巧，并在注释中写明需求。
 
 ### <a name="Rf-in"></a>F.16: For "in" parameters, pass cheaply-copied types by value and others by reference to `const`
 
