@@ -2611,50 +2611,47 @@ If an exception is not supposed to be thrown, the program cannot be assumed to c
 
 只有在确认需求之后才使用高级技巧，并在注释中写明需求。
 
-### <a name="Rf-in"></a>F.16: For "in" parameters, pass cheaply-copied types by value and others by reference to `const`
+### <a name="Rf-in"></a>F.16: 对于输入参数，对于复制廉价的类型使用传值的方式，其余的使用`const`引用类型
 
-##### Reason
+##### 原因
 
-Both let the caller know that a function will not modify the argument, and both allow initialization by rvalues.
+两种方式都是为了让调用者知道函数不会修改它的参数，并允许使用右值进行初始化。
 
-What is "cheap to copy" depends on the machine architecture, but two or three words (doubles, pointers, references) are usually best passed by value.
-When copying is cheap, nothing beats the simplicity and safety of copying, and for small objects (up to two or three words) it is also faster than passing by reference because it does not require an extra indirection to access from the function.
-
-##### Example
-
-    void f1(const string& s);  // OK: pass by reference to const; always cheap
-
-    void f2(string s);         // bad: potentially expensive
-
-    void f3(int x);            // OK: Unbeatable
-
-    void f4(const int& x);     // bad: overhead on access in f4()
-
-For advanced uses (only), where you really need to optimize for rvalues passed to "input-only" parameters:
-
-* If the function is going to unconditionally move from the argument, take it by `&&`. See [F.18](#Rf-consume).
-* If the function is going to keep a copy of the argument, in addition to passing by `const&` (for lvalues),
-  add an overload that passes the parameter by `&&` (for rvalues) and in the body `std::move`s it to its destination. Essentially this overloads a "will-move-from"; see [F.18](#Rf-consume).
-* In special cases, such as multiple "input + copy" parameters, consider using perfect forwarding. See [F.19](#Rf-forward).
+"复制廉价"的含义取决于机器架构，两个或三个word(double, 指针，引用)最好使用值的方式进行传递。当复制是廉价的，不会打破简洁性和复制的安全性，对于两三个word的小对像，传值会比引用更快，那是因为少了引用在函数中访问时的间接性。
 
 ##### Example
 
-    int multiply(int, int); // just input ints, pass by value
+    void f1(const string& s);  // OK: 使用常量引用，很廉价
 
-    // suffix is input-only but not as cheap as an int, pass by const&
+    void f2(string s);         // bad: 可能会很费
+
+    void f3(int x);            // OK: 无敌的
+
+    void f4(const int& x);     // bad: f4()中访问是有开销(overhead)
+
+(只)在高级用法中需要对“仅仅输入”的参数进行右值优化时：
+
+* 如果函数会无条件地移动(move)它的参数，使用`&&`，参见[F.18](#Rf-consume)。
+* 对于右值，如果函数想要复制这个参数，除了以`const&`进行传递外，以`&&`类型对函数进行重载，并在函数体中使用`std::move`复制到目标，该函数本质上重载了一个`将要移动出`的语义，参见[F.18](#Rf-consume)。
+* 特殊情况下，例如多个"输入+输出"的参数，考虑使用`完美转发`(perfect forwarding)，参见[F.19](#Rf-forward)。
+
+##### Example
+
+    int multiply(int, int); // 只输入了ints，传值
+
+    // 尾参是以const&传递的输入参数，没有int那么廉价
     string& concatenate(string&, const string& suffix);
 
-    void sink(unique_ptr<widget>);  // input only, and moves ownership of the widget
+    void sink(unique_ptr<widget>);  // 只做输入用，移动了widget的所有权
 
-Avoid "esoteric techniques" such as:
+避免“深奥的技术”，例如：
 
-* Passing arguments as `T&&` "for efficiency".
-  Most rumors about performance advantages from passing by `&&` are false or brittle (but see [F.18](#Rf-consume) and [F.19](#Rf-forward)).
-* Returning `const T&` from assignments and similar operations (see [F.47](#Rf-assignment-op).)
+* “为了省事”使用`T&&`进行传参，关于`&&`性能优势的大部分传言都是假的或不可靠的，参见[F.18](#Rf-consume)和[F.19](#Rf-forward)。
+* 从赋值中返回`const T&`以及相似的操作，参见[F.47](#Rf-assignment-op)。
 
-##### Example
+##### 示例
 
-Assuming that `Matrix` has move operations (possibly by keeping its elements in a `std::vector`):
+假定`Matrix`具有移动操作(可能在`std::vector`中保存了元素)：
 
     Matrix operator+(const Matrix& a, const Matrix& b)
     {
@@ -2663,9 +2660,9 @@ Assuming that `Matrix` has move operations (possibly by keeping its elements in 
         return res;
     }
 
-    Matrix x = m1 + m2;  // move constructor
+    Matrix x = m1 + m2;  // 移动构造
 
-    y = m3 + m3;         // move assignment
+    y = m3 + m3;         // 移动赋值
 
 ##### Notes
 
