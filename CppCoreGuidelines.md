@@ -1,4 +1,4 @@
-d# <a name="main"></a> C++核心指导
+d# <a name="main"></a> C++核心指南
 
 March 7, 2019
 
@@ -9,7 +9,7 @@ March 7, 2019
 * [Herb Sutter](http://herbsutter.com/)
 
 翻译：
-* Real Xie 
+* RealXie / 解玉坤
 
 这是一个持续更新的文档，已经更新到0.8的版本，复制，使用，修改以及在此工程上的衍生创建都基于MIT风格的许可（license）。向本工程贡献内容需要同意贡献者许可（Contributor License），更多细节参考相关的[LICENSE](LICENSE) 文档。该项目允许友好的用户使用，复制，修改以及再创作，也期待有建设性的意见。
 
