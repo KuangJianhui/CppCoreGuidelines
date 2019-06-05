@@ -2666,37 +2666,33 @@ If an exception is not supposed to be thrown, the program cannot be assumed to c
 
 ##### Notes
 
-The return value optimization doesn't handle the assignment case, but the move assignment does.
+返回值优化不会处理赋值的情况，但是移动赋值会。
 
-A reference may be assumed to refer to a valid object (language rule).
-There is no (legitimate) "null reference."
-If you need the notion of an optional value, use a pointer, `std::optional`, or a special value used to denote "no value."
+可以假定引用指向了一个合法的对象(语言规则)，没有(合法的)“空引用”。如果你需要一个可选的概念，使用指针、`std::optional`、或能表示“没有值”的特殊值。
 
 ##### Enforcement
 
-* (Simple) ((Foundation)) Warn when a parameter being passed by value has a size greater than `2 * sizeof(void*)`.
-  Suggest using a reference to `const` instead.
-* (Simple) ((Foundation)) Warn when a parameter passed by reference to `const` has a size less than `2 * sizeof(void*)`. Suggest passing by value instead.
-* (Simple) ((Foundation)) Warn when a parameter passed by reference to `const` is `move`d.
+* (简单) ((基础)) 如果一个大小大于`2 * sizeof(void*)`的参数按值传递，则发出警告，推荐使用`const`的引用来代替。
+* (简单) ((基础)) 如果一个大小小于`2 * sizeof(void*)`的参数按引用传递，则发出警告，推荐使用按值传递。
+* (简单) ((基础)) 警告一个以`const`引用进行传递的被`move`参数。
 
-### <a name="Rf-inout"></a>F.17: For "in-out" parameters, pass by reference to non-`const`
+### <a name="Rf-inout"></a>F.17: 对于"输入/输出"参数，以非`const`引用进行传递
 
 ##### Reason
 
-This makes it clear to callers that the object is assumed to be modified.
+可以让调用者清楚地知道这个对象是可能被修改的。
 
 ##### Example
 
-    void update(Record& r);  // assume that update writes to r
+    void update(Record& r);  // 假定了update会写入r
 
 ##### Note
 
-A `T&` argument can pass information into a function as well as out of it.
-Thus `T&` could be an in-out-parameter. That can in itself be a problem and a source of errors:
+`T&`类型的参数可以向函数中传入信息，也可以传出信息。因此`T&`可以是输入输出参数，这本身可能就是一个问题和错误的来源。
 
     void f(string& s)
     {
-        s = "New York";  // non-obvious error
+        s = "New York";  // 没有明显的错误
     }
 
     void g()
@@ -2706,13 +2702,16 @@ Thus `T&` could be an in-out-parameter. That can in itself be a problem and a so
         // ...
     }
 
-Here, the writer of `g()` is supplying a buffer for `f()` to fill, but `f()` simply replaces it (at a somewhat higher cost than a simple copy of the characters).
-A bad logic error can happen if the writer of `g()` incorrectly assumes the size of the `buffer`.
+这里，`g()`的作者给`f()`提供了一块buffer进行填充，但是，`f()`简单地替换了它（用了一种比简单复制字符更高点的代价）。
+如果`g()`的作者错误地假定了`buffer`的大小，则可能会导致严重的逻辑错误。
+
 
 ##### Enforcement
 
 * (Moderate) ((Foundation)) Warn about functions regarding reference to non-`const` parameters that do *not* write to them.
 * (Simple) ((Foundation)) Warn when a non-`const` parameter being passed by reference is `move`d.
+
+* (Moderate) ((基础))
 
 ### <a name="Rf-consume"></a>F.18: For "will-move-from" parameters, pass by `X&&` and `std::move` the parameter
 
