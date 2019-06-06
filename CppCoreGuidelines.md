@@ -2708,197 +2708,186 @@ If an exception is not supposed to be thrown, the program cannot be assumed to c
 
 ##### Enforcement
 
-* (Moderate) ((Foundation)) Warn about functions regarding reference to non-`const` parameters that do *not* write to them.
-* (Simple) ((Foundation)) Warn when a non-`const` parameter being passed by reference is `move`d.
+* (Moderate) ((基础)) 如果函数有非`const`引用的参数，但是并没有更改该参数，则发出警告。
+* (简单) ((基础)) 如非`const`引用的参数被`std::move`，则发出警告。
 
-* (Moderate) ((基础))
-
-### <a name="Rf-consume"></a>F.18: For "will-move-from" parameters, pass by `X&&` and `std::move` the parameter
+### <a name="Rf-consume"></a>F.18: 对于“将被移动”的参数，使用`X&&`传递和`std::move`移动之
 
 ##### Reason
 
-It's efficient and eliminates bugs at the call site: `X&&` binds to rvalues, which requires an explicit `std::move` at the call site if passing an lvalue.
+这是有效的，且在调用点上消除了bug：`X&&`绑定到右值(rvalue)，如果要传递左值，需要在调用位置显示地使用`std::move`。
 
 ##### Example
 
-    void sink(vector<int>&& v) {   // sink takes ownership of whatever the argument owned
-        // usually there might be const accesses of v here
+    void sink(vector<int>&& v) {   // sink 拥有所有参数的所有权
+        // 通常，这里对会v进行const访问(译注：即不会更改v)
         store_somewhere(std::move(v));
-        // usually no more use of v here; it is moved-from
+        // 通常，这里不会再对v进行使用；它已经被move了
     }
 
 Note that the `std::move(v)` makes it possible for `store_somewhere()` to leave `v` in a moved-from state.
 [That could be dangerous](#Rc-move-semantic).
 
+注意，`std::move(v)`让`store_somewhere()`把`v`变成已移动(moved-from)状态变成可能，不过[这可能是危险的](#Rc-move-semantic)。
 
-##### Exception
+##### 例外
 
-Unique owner types that are move-only and cheap-to-move, such as `unique_ptr`, can also be passed by value which is simpler to write and achieves the same effect. Passing by value does generate one extra (cheap) move operation, but prefer simplicity and clarity first.
+唯一拥有者类型(Unique owner type)是只可以移动的，不过很廉价，例如`unique_ptr`，也可以进行按值传递，这样即简单又能达到同样的目的。按值传递会产生一个额外但廉价的move操作，但更简单明了。
 
-For example:
+例如：
 
     template <class T>
     void sink(std::unique_ptr<T> p) {
-        // use p ... possibly std::move(p) onward somewhere else
-    }   // p gets destroyed
+        // 使用 p ... 可能在有些地方用到std::move(p)
+    }   // p 被销毁了
 
-##### Enforcement
+##### 实施
 
-* Flag all `X&&` parameters (where `X` is not a template type parameter name) where the function body uses them without `std::move`.
-* Flag access to moved-from objects.
-* Don't conditionally move from objects
+* 标记所有参数是`X&&`(其中`X`不是模板类型参数名)，但函数体内并没有对其进行`std::move`操作的函数。
+* 标记对已移动(moved-from)状态对象的访问。
+* 不要有条件地移动对象。
 
-### <a name="Rf-forward"></a>F.19: For "forward" parameters, pass by `TP&&` and only `std::forward` the parameter
+### <a name="Rf-forward"></a>F.19: 对于要"转发"的参数，使用`TP&&`并只`std::forward`它
 
-##### Reason
+##### 原因
 
-If the object is to be passed onward to other code and not directly used by this function, we want to make this function agnostic to the argument `const`-ness and rvalue-ness.
+如果要将对象传递给其他代码，而该函数又不直接使用该对象，那么我们希望该函数不受`const`和右值属性的影响。
 
-In that case, and only that case, make the parameter `TP&&` where `TP` is a template type parameter -- it both *ignores* and *preserves* `const`-ness and rvalue-ness. Therefore any code that uses a `TP&&` is implicitly declaring that it itself doesn't care about the variable's `const`-ness and rvalue-ness (because it is ignored), but that intends to pass the value onward to other code that does care about `const`-ness and rvalue-ness (because it is preserved). When used as a parameter `TP&&` is safe because any temporary objects passed from the caller will live for the duration of the function call. A parameter of type `TP&&` should essentially always be passed onward via `std::forward` in the body of the function.
+当且仅当在那种情况下，让参数为`TP&&`, 其中`TP`是模板类型参数 -- 它即*忽略*又*保留*该参数的`const`属性和左传属性。因此，任何使用`TP&&`的代码都预示着其不关心变量的`const`属性和右值属性（被忽略了），但它将该变量传递给的代码却要关心它的`const`属性和右值属性（因为它保留了）。使用`TP&&`的参数是安全的，因为任何从调用者传进来的临时对象都会在整个函数调用期间有效。`TP&&`类型的参数本质上应该通过函数体中的`std::forward`继续（向其它函数）传递。
 
-##### Example
+##### 示例
 
     template <class F, class... Args>
     inline auto invoke(F f, Args&&... args) {
         return f(forward<Args>(args)...);
     }
 
-    ??? calls ???
+    ??? 调用 ???
 
-##### Enforcement
+##### 实施
 
-* Flag a function that takes a `TP&&` parameter (where `TP` is a template type parameter name) and does anything with it other than `std::forward`ing it exactly once on every static path.
+* 标记一个函数，该函数接受一个`TP&&`参数(`TP`是一个模板类型参数名)，并在每个静态路径上对它执行除`std::forward`之外的任何操作。
 
-### <a name="Rf-out"></a>F.20: For "out" output values, prefer return values to output parameters
+### <a name="Rf-out"></a>F.20: 对于输出值，优先使用返回值，而不是输出参数
 
-##### Reason
+##### 原因
 
-A return value is self-documenting, whereas a `&` could be either in-out or out-only and is liable to be misused.
+返回值是更直白，而`&`即可以是输入/输出，也可以是只输出的，很容易被误用。
 
-This includes large objects like standard containers that use implicit move operations for performance and to avoid explicit memory management.
+大对象像标准库中的容器，使用隐式的move操作来提高性能和避免显示的内存管理。
 
-If you have multiple values to return, [use a tuple](#Rf-out-multi) or similar multi-member type.
+如果你有多个值要返回，使用[tuple](#Rf-out-multi)或类似的多成员类型。
 
-##### Example
+##### 示例
 
-    // OK: return pointers to elements with the value x
+    // OK: 返回值为x的元素的指针
     vector<const int*> find_all(const vector<int>&, int x);
 
-    // Bad: place pointers to elements with value x in-out
+    // Bad: 将值为x的元素的指针放到in-out参数中
     void find_all(const vector<int>&, vector<const int*>& out, int x);
 
 ##### Note
 
-A `struct` of many (individually cheap-to-move) elements may be in aggregate expensive to move.
+移动(move)一个有很多元素构成的`struct`的代价可能是昂贵的（每个单独的元素是move廉价的）。
 
-It is not recommended to return a `const` value.
-Such older advice is now obsolete; it does not add value, and it interferes with move semantics.
+不建议返回一个`const`值。这个旧的建议(返回const值)现在过时了，它不会带来收获，并且会干扰移动语义。
 
-    const vector<int> fct();    // bad: that "const" is more trouble than it is worth
+    const vector<int> fct();    // bad: “const”比它的价值更麻烦
 
     vector<int> g(const vector<int>& vx)
     {
         // ...
-        fct() = vx;   // prevented by the "const"
+        fct() = vx;   // 被"const"阻止了
         // ...
-        return fct(); // expensive copy: move semantics suppressed by the "const"
+        return fct(); // 昂贵的复制：移动语义被"const"抑制了
     }
 
-The argument for adding `const` to a return value is that it prevents (very rare) accidental access to a temporary.
-The argument against is prevents (very frequent) use of move semantics.
+添加`const`返回值的理由是它可以阻止(很少)意外地访问临时变量。
+反对的理由是它会阻止(非常频繁)移动语义的使用。
 
-##### Exceptions
+##### 例外
 
-* For non-value types, such as types in an inheritance hierarchy, return the object by `unique_ptr` or `shared_ptr`.
-* If a type is expensive to move (e.g., `array<BigPOD>`), consider allocating it on the free store and return a handle (e.g., `unique_ptr`), or passing it in a reference to non-`const` target object to fill (to be used as an out-parameter).
-* To reuse an object that carries capacity (e.g., `std::string`, `std::vector`) across multiple calls to the function in an inner loop: [treat it as an in/out parameter and pass by reference](#Rf-out-multi).
+* 对于非值类型，例如在继承体系下的类型，使用`unique_ptr`或`shared_ptr`返回对象。
+* 如果一个类型的移动代价很高(如，`array<BigPOD>`)，考虑将其分配在自由存储区(译注：堆内存空间)，然后返回一个句柄(如，`unique_ptr`)，或将目标对象的非`const`引用传递到函数进行填充(用作输出参数)。
+* 为了在函数内循环的多次调用中，重用一个具有容量的对象(如，`std::string`、`std::vector`)：[将其作为in/out参数并通过引用传递](#Rf-out-multi).
 
-##### Example
+##### 示例
 
-    struct Package {      // exceptional case: expensive-to-move object
+    struct Package {      // 例外情况：移动昂贵的对象
         char header[16];
         char load[2024 - 16];
     };
 
-    Package fill();       // Bad: large return value
+    Package fill();       // Bad: 大的返回值
     void fill(Package&);  // OK
 
     int val();            // OK
-    void val(int&);       // Bad: Is val reading its argument
+    void val(int&);       // Bad: 函数val会读它的参数吗？
 
 ##### Enforcement
 
-* Flag reference to non-`const` parameters that are not read before being written to and are a type that could be cheaply returned; they should be "out" return values.
-* Flag returning a `const` value. To fix: Remove `const` to return a non-`const` value instead.
+* 标出一个函数，如果非`const`引用的参数在写之前并没有被读过，并且该类型可以被廉价地返回；应当使用返回值进行输出。
+* 标出返回`const`值的函数。修改：去掉`const`，使用非`const`返回值进行替代。
 
-### <a name="Rf-out-multi"></a>F.21: To return multiple "out" values, prefer returning a struct or tuple
+### <a name="Rf-out-multi"></a>F.21: 为了返回多个输出值，优先使用strcut或tuple进行返回
 
-##### Reason
+##### 原因
 
-A return value is self-documenting as an "output-only" value.
-Note that C++ does have multiple return values, by convention of using a `tuple` (including `pair`),
-possibly with the extra convenience of `tie` at the call site.
-Prefer using a named struct where there are semantics to the returned value. Otherwise, a nameless `tuple` is useful in generic code.
+返回值作为"仅输出"是自明(自我描述)的。
+注意，C++确实有多返回值，习惯上使用`tuple`(包括`pair`)，在调用位置上使用`tie`可能会带来额外的便利。
+倾向于使用一个具有返回值语义的命名结构体，另外，不具名的`tuple`在泛型代码有很有用。
 
 ##### Example
 
-    // BAD: output-only parameter documented in a comment
-    int f(const string& input, /*output only*/ string& output_data)
+    // BAD: ”仅输出“参数在注释中注明
+    int f(const string& input, /*仅输出*/ string& output_data)
     {
         // ...
         output_data = something();
         return status;
     }
 
-    // GOOD: self-documenting
+    // GOOD: 自解释的
     tuple<int, string> f(const string& input)
     {
         // ...
         return make_tuple(status, something());
     }
 
-C++98's standard library already used this style, because a `pair` is like a two-element `tuple`.
-For example, given a `set<string> my_set`, consider:
+C++98的标准库已经使用了这种(多返回值)风格，因为`pair`就像是两个元素的`tuple`。
+例如，给出一个`set<string> my_set`，考虑：
 
     // C++98
     result = my_set.insert("Hello");
-    if (result.second) do_something_with(result.first);    // workaround
+    if (result.second) do_something_with(result.first);    // 工作区
 
-With C++11 we can write this, putting the results directly in existing local variables:
+使用C++11，我们可以这样写，将结果直接写入已经存在的局部变量：
 
-    Sometype iter;                                // default initialize if we haven't already
-    Someothertype success;                        // used these variables for some other purpose
+    Sometype iter;                                // 默认初始化，如果还没准备好
+    Someothertype success;                        // 为一些其它目的而使用这些变量
 
-    tie(iter, success) = my_set.insert("Hello");   // normal return value
+    tie(iter, success) = my_set.insert("Hello");   // 正常返回
     if (success) do_something_with(iter);
 
-With C++17 we are able to use "structured bindings" to declare and initialize the multiple variables:
+使用C++17，我们可以使用"结构化绑定"来声明我初始化多个变量：
 
     if (auto [ iter, success ] = my_set.insert("Hello"); success) do_something_with(iter);
 
-##### Exception
+##### 例外
 
-Sometimes, we need to pass an object to a function to manipulate its state.
-In such cases, passing the object by reference [`T&`](#Rf-inout) is usually the right technique.
-Explicitly passing an in-out parameter back out again as a return value is often not necessary.
-For example:
+有时，为了操作一个对象我们需要将其传递到函数内，在这种情况，使用引用[`T&`](#Rf-inout) 来传递对象通常是正确的。显示地将传进去的in-out参数再使用返回值输出出来一般是没有必要的，例如：
 
-    istream& operator>>(istream& is, string& s);    // much like std::operator>>()
+    istream& operator>>(istream& is, string& s);    // 很像 std::operator>>()
 
     for (string s; cin >> s; ) {
-        // do something with line
+        // 对每行进行处理
     }
 
-Here, both `s` and `cin` are used as in-out parameters.
-We pass `cin` by (non-`const`) reference to be able to manipulate its state.
-We pass `s` to avoid repeated allocations.
-By reusing `s` (passed by reference), we allocate new memory only when we need to expand `s`'s capacity.
-This technique is sometimes called the "caller-allocated out" pattern and is particularly useful for types,
-such as `string` and `vector`, that needs to do free store allocations.
+这里，`s`和`cin`都被用作in-out参数。我们使用非`const`引用来传递`cin`，以便能操作它的状态。传递`s`以避免重复分配，通过传递引用来复用`s`，只有需要扩大`s`的容量时才分配新的内存，这项技术有时也被称为"调用者分配输出"(caller-allocated out)模式，对`string`和`vector`这些需要自由存储空间的类型特别有用。
 
-To compare, if we passed out all values as return values, we would something like this:
+作为对比，如果我们将所有的值以返回值的方式进行返回，可以就像这样：
 
-    pair<istream&, string> get_string(istream& is);  // not recommended
+    pair<istream&, string> get_string(istream& is);  // 不推荐
     {
         string s;
         is >> s;
@@ -2909,115 +2898,105 @@ To compare, if we passed out all values as return values, we would something lik
         // do something with p.second
     }
 
-We consider that significantly less elegant with significantly less performance.
+我们认为这是明显不优雅和缺乏效率的。
 
-For a truly strict reading of this rule (F.21), the exception isn't really an exception because it relies on in-out parameters,
-rather than the plain out parameters mentioned in the rule.
-However, we prefer to be explicit, rather than subtle.
+如果真正认真的阅读这条规则(F.21)，这个例外情况并非是真正的例外，因为它依赖了in-out参数，而不是规则中提到的普通out参数，然而，我们更喜欢明确的规则，而不是微妙的(规则)。
 
 ##### Note
 
-In many cases, it may be useful to return a specific, user-defined type.
-For example:
+在很多例子中，返回特定的、用户定义的类型可能是有用的，例如：
 
     struct Distance {
         int value;
-        int unit = 1;   // 1 means meters
+        int unit = 1;   // 1 代表米
     };
 
-    Distance d1 = measure(obj1);        // access d1.value and d1.unit
-    auto d2 = measure(obj2);            // access d2.value and d2.unit
-    auto [value, unit] = measure(obj3); // access value and unit; somewhat redundant
-                                        // to people who know measure()
-    auto [x, y] = measure(obj4);        // don't; it's likely to be confusing
+    Distance d1 = measure(obj1);        // 访问 d1.value 和 d1.unit
+    auto d2 = measure(obj2);            // 访问 d2.value 和 d2.unit
+    auto [value, unit] = measure(obj3); // 访问 value 和 unit; 对于知道measure()的人来说，多少有点冗余
+    auto [x, y] = measure(obj4);        // 不要这样做：可能会让人迷惑
 
-The overly-generic `pair` and `tuple` should be used only when the value returned represents to independent entities rather than an abstraction.
+过于泛化的`pair`和`tuple`应当只用在返回值表示独立实体而非一个抽象的情况下。
 
-Another example, use a specific type along the lines of `variant<T, error_code>`, rather than using the generic `tuple`.
+另一个例子，使用类似于`variant<T, error_code>`的特化类型，而不泛型的`tuple`。
 
 ##### Enforcement
 
-* Output parameters should be replaced by return values.
-  An output parameter is one that the function writes to, invokes a non-`const` member function, or passes on as a non-`const`.
+* 输出参数应当被替换成返回值。
+其中，输出参数是指调用非`const`成员函数写入的成员变量，或以非`const`引用传递的参数。
 
-### <a name="Rf-ptr"></a>F.22: Use `T*` or `owner<T*>` to designate a single object
+### <a name="Rf-ptr"></a>F.22: 使用`T*`或`owner<T*>`来指定单个对象
 
-##### Reason
+##### 原因
 
-Readability: it makes the meaning of a plain pointer clear.
-Enables significant tool support.
+可读性：让普通指针的函数的含义更加清晰，能增加有意义的工具支持。
 
 ##### Note
 
-In traditional C and C++ code, plain `T*` is used for many weakly-related purposes, such as:
+在传统的C和c++代码中，普通的`T*`用于许多不怎么相关的(弱相关的)目的，比如:
 
-* Identify a (single) object (not to be deleted by this function)
-* Point to an object allocated on the free store (and delete it later)
-* Hold the `nullptr`
-* Identify a C-style string (zero-terminated array of characters)
-* Identify an array with a length specified separately
-* Identify a location in an array
+* 标识(单个)对象(不会删除被此函数删除)。
+* 指向一个在自由存储区上分配的对象(稍后删除)。
+* 持有`nullptr`。
+* 标识C风格的字符串(以`\0`结尾的字符数组)。
+* 标识一个长度分开指定的数组。
+* 标识数组中的位置。
 
-This makes it hard to understand what the code does and is supposed to do.
-It complicates checking and tool support.
+这让代码在做什么以及应当做什么变得难以理解，也让检查和工具支持变得复杂。
 
-##### Example
+##### 示例
 
     void use(int* p, int n, char* s, int* q)
     {
-        p[n - 1] = 666; // Bad: we don't know if p points to n elements;
-                        // assume it does not or use span<int>
-        cout << s;      // Bad: we don't know if that s points to a zero-terminated array of char;
-                        // assume it does not or use zstring
-        delete q;       // Bad: we don't know if *q is allocated on the free store;
-                        // assume it does not or use owner
+        p[n - 1] = 666; // Bad: 我们不知道p是否指向n个元素，如果是，使用span<int>
+        cout << s;      // Bad: 我们不知道s是否指向\0结尾的char数组，如果是，使用zstring
+        delete q;       // Bad: 我们不知道*q是否分配在自由存储区，如果是，使用owner
     }
 
-better
+更好
 
     void use2(span<int> p, zstring s, owner<int*> q)
     {
-        p[p.size() - 1] = 666; // OK, a range error can be caught
+        p[p.size() - 1] = 666; // OK, 范围错误可以被捕捉到
         cout << s; // OK
         delete q;  // OK
     }
 
 ##### Note
 
-`owner<T*>` represents ownership, `zstring` represents a C-style string.
+`owner<T*>`代表所有权，`zstring`代表C风格的字符串。
 
-**Also**: Assume that a `T*` obtained from a smart pointer to `T` (e.g., `unique_ptr<T>`) points to a single element.
+**同样**: 假定从指向`T`的智能指针(如，`unique_ptr<T>`)中获取的`T*`指向单个元素。
 
-**See also**: [Support library](#S-gsl)
+**也参见**: [支持库](#S-gsl)
 
-**See also**: [Do not pass an array as a single pointer](#Ri-array)
+**也参见**: [不要以单个指针的形式传递数组](#Ri-array)
 
 ##### Enforcement
 
-* (Simple) ((Bounds)) Warn for any arithmetic operation on an expression of pointer type that results in a value of pointer type.
+* (简单) ((有限)) 对于指针类型表达式上的任何算术(arithmetic)运算，如果运算结果为指针类型值，则发出警告。
 
-### <a name="Rf-nullptr"></a>F.23: Use a `not_null<T>` to indicate that "null" is not a valid value
+### <a name="Rf-nullptr"></a>F.23: 使用`not_null<T>`来表示"null"不是一个有效值
 
-##### Reason
+##### 原因
 
-Clarity. A function with a `not_null<T>` parameter makes it clear that the caller of the function is responsible for any `nullptr` checks that may be necessary.
-Similarly, a function with a return value of `not_null<T>` makes it clear that the caller of the function does not need to check for `nullptr`.
+直观：有`not_null<T>`参数的函数表明，它的调用函数有责任在必要的地方进行所有的`nullptr`检查；类似地，返回值为`not_null<T>`的函数表明，调用它的函数不需要检查`nullptr`。
 
-##### Example
+##### 示例
 
-`not_null<T*>` makes it obvious to a reader (human or machine) that a test for `nullptr` is not necessary before dereference.
-Additionally, when debugging, `owner<T*>` and `not_null<T>` can be instrumented to check for correctness.
+`not_null<T*>`能够明显地读者(人或机器)知道在解引用(dereference)之前检查`nullptr`是没有必要的。
+另外，在debug时，`owner<T*>`和`not_null<T>`可以被工具检查是否正确。
 
-Consider:
+考虑:
 
     int length(Record* p);
 
-When I call `length(p)` should I check if `p` is `nullptr` first? Should the implementation of `length()` check if `p` is `nullptr`?
+当我调用`length(p)`时，我应该检查`p`是否为`nullptr`吗？`length()`的实现应该检查`p`是否为`nullptr`吗？
 
-    // it is the caller's job to make sure p != nullptr
+    // 保证p != nullptr是调用者的事
     int length(not_null<Record*> p);
 
-    // the implementor of length() must assume that p == nullptr is possible
+    // length()的实现者必须假定p == nullptr是有可能的
     int length(Record* p);
 
 ##### Note
