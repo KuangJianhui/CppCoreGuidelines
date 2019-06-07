@@ -3001,110 +3001,111 @@ C++98的标准库已经使用了这种(多返回值)风格，因为`pair`就像�
 
 ##### Note
 
-A `not_null<T*>` is assumed not to be the `nullptr`; a `T*` may be the `nullptr`; both can be represented in memory as a `T*` (so no run-time overhead is implied).
+`not_null<T*>`是假定不会为`nullptr`的，而`T*`可能为`nullptr`，两者都可以在内存中表示`T*`(所以没有隐含的运行时开销)。
 
 ##### Note
 
-`not_null` is not just for built-in pointers. It works for `unique_ptr`, `shared_ptr`, and other pointer-like types.
+`not_null`不仅适用于内置的指针类型，也适用于`unique_ptr`、`shared_ptr`以及其它像指针的类型。
 
 ##### Enforcement
 
-* (Simple) Warn if a raw pointer is dereferenced without being tested against `nullptr` (or equivalent) within a function, suggest it is declared `not_null` instead.
-* (Simple) Error if a raw pointer is sometimes dereferenced after first being tested against `nullptr` (or equivalent) within the function and sometimes is not.
-* (Simple) Warn if a `not_null` pointer is tested against `nullptr` within a function.
+* (简单) 如果一个函数对原始指针进行解引用之前没有检查`nullptr`(或等价的)，则给出警告，建议声明为`not_null`。
+* (简单) 如果一个函数对原始指针进行解引用之前有时先进行了`nullptr`(或等价的)检查，有时又没有进行检查，则报错。
+* (简单) 如果一个函数对`not_null`进行了`nullptr`检查，则给出警告。
 
-### <a name="Rf-range"></a>F.24: Use a `span<T>` or a `span_p<T>` to designate a half-open sequence
+### <a name="Rf-range"></a>F.24: 使用`span<T>`或`span_p<T>`来指定一个半开序列(half-open sequence)
 
 ##### Reason
 
-Informal/non-explicit ranges are a source of errors.
+非正式/非显式范围是错误的来源。
 
 ##### Example
 
-    X* find(span<X> r, const X& v);    // find v in r
+    X* find(span<X> r, const X& v);    // 在r中查找v
 
     vector<X> vec;
     // ...
-    auto p = find({vec.begin(), vec.end()}, X{});  // find X{} in vec
+    auto p = find({vec.begin(), vec.end()}, X{});  // 在vec中查找X{}
 
 ##### Note
 
-Ranges are extremely common in C++ code. Typically, they are implicit and their correct use is very hard to ensure.
-In particular, given a pair of arguments `(p, n)` designating an array `[p:p+n)`,
-it is in general impossible to know if there really are `n` elements to access following `*p`.
-`span<T>` and `span_p<T>` are simple helper classes designating a `[p:q)` range and a range starting with `p` and ending with the first element for which a predicate is true, respectively.
+范围(Range)在C++代码中相当普通，通常它们都是隐式，并且很难保证能正确使用它们。
+特别是当用一对参数`(p, n)`来指定一个数组`[p:p+n)`时，通常不太可能知道`*p`后面是否确实跟了`n`个元素。
+`span<T>`和`span_p<T>`是简单的辅助类，分别用来指定范围`[p:q)`和一个以`p`开头及让断言(predicate)为真的第一个元素为结尾的范围。
 
 ##### Example
 
-A `span` represents a range of elements, but how do we manipulate elements of that range?
+`span`表示了元素的范围，但是我们怎么样操作范围内的元素呢？
 
     void f(span<int> s)
     {
-        // range traversal (guaranteed correct)
+        // 范围遍历（保证正确）
         for (int x : s) cout << x << '\n';
 
-        // C-style traversal (potentially checked)
+        // C风格的遍历（潜在的检查）
         for (gsl::index i = 0; i < s.size(); ++i) cout << s[i] << '\n';
 
-        // random access (potentially checked)
+        // 随机访问（潜在的检查）
         s[7] = 9;
 
-        // extract pointers (potentially checked)
+        // 提取指针（潜在的检查）
         std::sort(&s[0], &s[s.size() / 2]);
     }
 
+*译注：C风格的遍历、随机访问、提取指针等操作时，span会进行范围的合法性检查，这是有一定的开销的(overhead)。*
+
 ##### Note
 
-A `span<T>` object does not own its elements and is so small that it can be passed by value.
+`span<T>`对象没有持有元素，所以小到可以按值传递。
 
-Passing a `span` object as an argument is exactly as efficient as passing a pair of pointer arguments or passing a pointer and an integer count.
+传递`span`对象作为参数跟传递一对指针或指针和一个整型的数量一样高效。
 
-**See also**: [Support library](#S-gsl)
+**也参见**: [支持库](#S-gsl)
 
 ##### Enforcement
 
-(Complex) Warn where accesses to pointer parameters are bounded by other parameters that are integral types and suggest they could use `span` instead.
+(复杂) 发出警告，如果访问的指针被其它整数类型参数进行范围限定时，建议他们使用`span`替代。
 
-### <a name="Rf-zstring"></a>F.25: Use a `zstring` or a `not_null<zstring>` to designate a C-style string
+### <a name="Rf-zstring"></a>F.25: 使用`zstring`或`not_null<zstring>`来指定C风格的字符串
 
 ##### Reason
 
-C-style strings are ubiquitous. They are defined by convention: zero-terminated arrays of characters.
-We must distinguish C-style strings from a pointer to a single character or an old-fashioned pointer to an array of characters.
+C风格的字符串无处不在，它们由约定定义：以`\0`结尾的字符数组。
+我们必须将C风格的字符串与指向单个字符的指针或指向字符数组的老式指针区分开来。
 
 ##### Example
 
-Consider:
+考虑:
 
     int length(const char* p);
 
-When I call `length(s)` should I check if `s` is `nullptr` first? Should the implementation of `length()` check if `p` is `nullptr`?
+当调用`length(s)`时，我应该先检查`s`是否为`nullptr`吗？`length()`的实现应该检查`p`是否为`nullptr`吗？
 
-    // the implementor of length() must assume that p == nullptr is possible
+    // length()的实现必须假定p == nullptr是有可能的
     int length(zstring p);
 
-    // it is the caller's job to make sure p != nullptr
+    // 调用者有责任保证p != nullptr
     int length(not_null<zstring> p);
 
-##### Note
+##### 注意
 
-`zstring` does not represent ownership.
+`zstring`不代表所有权。
 
-**See also**: [Support library](#S-gsl)
+**也参见**: [支持库](#S-gsl)
 
-### <a name="Rf-unique_ptr"></a>F.26: Use a `unique_ptr<T>` to transfer ownership where a pointer is needed
+### <a name="Rf-unique_ptr"></a>F.26: 在需要指针的地方使用`unique_ptr<T>`来转移所有权
 
 ##### Reason
 
-Using `unique_ptr` is the cheapest way to pass a pointer safely.
+使用`unique_ptr`是安全地传递指针最廉价的方式。
 
-**See also**: [C.50](#Rc-factory) regarding when to return a `shared_ptr` from a factory.
+**也参见**: [C.50 关于何时从工厂返回`shared_ptr`](#Rc-factory)
 
-##### Example
+##### 示例
 
-    unique_ptr<Shape> get_shape(istream& is)  // assemble shape from input stream
+    unique_ptr<Shape> get_shape(istream& is)  //  从输入流组装形状 
     {
-        auto kind = read_header(is); // read header and identify the next shape on input
+        auto kind = read_header(is); // 在输入端读取头部，及识别下一个形状
         switch (kind) {
         case kCircle:
             return make_unique<Circle>(is);
@@ -3116,19 +3117,19 @@ Using `unique_ptr` is the cheapest way to pass a pointer safely.
 
 ##### Note
 
-You need to pass a pointer rather than an object if what you are transferring is an object from a class hierarchy that is to be used through an interface (base class).
+当使用接口使用类层次结构中的对象时，你需要传递一个(基类)指针，而不是对象。
 
 ##### Enforcement
 
-(Simple) Warn if a function returns a locally allocated raw pointer. Suggest using either `unique_ptr` or `shared_ptr` instead.
+(简单) 当函数返回一个在局部分配的原始指针时，给出警告，建议使用`unique_ptr`或`shared_ptr`进行替换。
 
-### <a name="Rf-shared_ptr"></a>F.27: Use a `shared_ptr<T>` to share ownership
+### <a name="Rf-shared_ptr"></a>F.27: 使用`shared_ptr<T>`来共享所有权
 
-##### Reason
+##### 原因
 
-Using `std::shared_ptr` is the standard way to represent shared ownership. That is, the last owner deletes the object.
+表达共享所有权的标准做法是使用`std::shared_ptr`，也就是说，由最后一个拥有者来删除对象。
 
-##### Example
+##### 示例
 
     shared_ptr<const Image> im { read_image(somewhere) };
 
@@ -3137,67 +3138,65 @@ Using `std::shared_ptr` is the standard way to represent shared ownership. That 
     std::thread t2 {shade, args2, bottom_left, im};
     std::thread t3 {shade, args3, bottom_right, im};
 
-    // detach threads
-    // last thread to finish deletes the image
+    // 分离(detach)线程
+    // 最后一个线程结束时删除image
 
 ##### Note
 
-Prefer a `unique_ptr` over a `shared_ptr` if there is never more than one owner at a time.
-`shared_ptr` is for shared ownership.
+如果同一时刻只有一个所有者，优先使用`unique_ptr`，而不是`sharred_ptr`。
+`shared_ptr`是为了共享所有权的(译注：即同一时刻会有多个所有者)。
 
-Note that pervasive use of `shared_ptr` has a cost (atomic operations on the `shared_ptr`'s reference count have a measurable aggregate cost).
+注意，到处所有`shared_ptr`是有开销的(`shared_ptr`的引用计数的原子操作会有一个可观的累积消耗)。
 
-##### Alternative
+##### 可选方案
 
-Have a single object own the shared object (e.g. a scoped object) and destroy that (preferably implicitly) when all users have completed.
+让一个对象拥有共享对象(例如，作用域对象)，并在所有用户完成时销毁它(最好是隐式地)。
 
 ##### Enforcement
 
-(Not enforceable) This is a too complex pattern to reliably detect.
+(不可强制) 这是一个过于复杂的模式，以至于无法可靠地检测。
 
-### <a name="Rf-ptr-ref"></a>F.60: Prefer `T*` over `T&` when "no argument" is a valid option
+### <a name="Rf-ptr-ref"></a>F.60: 当"没有参数"("no argument")是合法的选项时，使用`T*`而不是`T&`
 
-##### Reason
+##### 原因
 
-A pointer (`T*`) can be a `nullptr` and a reference (`T&`) cannot, there is no valid "null reference".
-Sometimes having `nullptr` as an alternative to indicated "no object" is useful, but if it is not, a reference is notationally simpler and might yield better code.
+指针(`T*`)可以是`nullptr`，而引用(`T&`)却没有合法的空引用(null reference)。
+有时使用`nullptr`作为指示“没有对象”的替代选项是有用的，但是如果不是，引用就简单得多，并且可能产生更好的代码。
 
-##### Example
+##### 示例
 
-    string zstring_to_string(zstring p) // zstring is a char*; that is a C-style string
+    string zstring_to_string(zstring p) // zstring是char*，一个C风格的字符串
     {
-        if (!p) return string{};    // p might be nullptr; remember to check
+        if (!p) return string{};    // p可能是nullptr，记得需要检查
         return string{p};
     }
 
     void print(const vector<int>& r)
     {
-        // r refers to a vector<int>; no check needed
+        // r指向一个vector<int>，不需要检查
     }
 
 ##### Note
 
-It is possible, but not valid C++ to construct a reference that is essentially a `nullptr` (e.g., `T* p = nullptr; T& r = (T&)*p;`).
-That error is very uncommon.
+构造一个实质上是`nullptr`的引用是可能的，但不是有效的C++，例如`T* p = nullptr; T& r = (T&)*p;`，这种错误很少见。
 
 ##### Note
 
-If you prefer the pointer notation (`->` and/or `*` vs. `.`), `not_null<T*>` provides the same guarantee as `T&`.
+如果你喜欢指针表示法(`->`或`*`而不是`.`)，`not_null<T*>`提供了像`T&`一样的保证。
 
 ##### Enforcement
 
 * Flag ???
 
-### <a name="Rf-return-ptr"></a>F.42: Return a `T*` to indicate a position (only)
+### <a name="Rf-return-ptr"></a>F.42: (仅)在表示位置时返回`T*`
 
-##### Reason
+##### 原因
 
-That's what pointers are good for.
-Returning a `T*` to transfer ownership is a misuse.
+这是指针的用处，返回`T*`来转移所有权是一种误用。
 
-##### Example
+##### 示例
 
-    Node* find(Node* t, const string& s)  // find s in a binary tree of Nodes
+    Node* find(Node* t, const string& s)  // 在Node的二叉树中查找s
     {
         if (!t || t->name == s) return t;
         if ((auto p = find(t->left, s))) return p;
@@ -3205,44 +3204,47 @@ Returning a `T*` to transfer ownership is a misuse.
         return nullptr;
     }
 
-If it isn't the `nullptr`, the pointer returned by `find` indicates a `Node` holding `s`.
-Importantly, that does not imply a transfer of ownership of the pointed-to object to the caller.
+如果`find`返回的指针不为`nullptr`，说明有一个`Node`持有`s`。
+重要的是，这并不意味着将指向对象的所有权转移给调用者。
 
 ##### Note
 
-Positions can also be transferred by iterators, indices, and references.
-A reference is often a superior alternative to a pointer [if there is no need to use `nullptr`](#Rf-ptr-ref) or [if the object referred to should not change](???).
+位置也可以通过迭代器、索引和引用来转移。
+相比于指针，引用通常是更好的选择，[如果无需使用`nullptr`](#Rf-ptr-ref) 或 [被引用对象不应改变](???)
 
 ##### Note
 
-Do not return a pointer to something that is not in the caller's scope; see [F.43](#Rf-dangle).
+不要返回不在调用者作用域内的对象的指针；参见[F.43](#Rf-dangle)。
 
-**See also**: [discussion of dangling pointer prevention](#???)
+**也参见**: [discussion of dangling pointer prevention](#???)
 
 ##### Enforcement
 
-* Flag `delete`, `std::free()`, etc. applied to a plain `T*`.
+<!-- * Flag `delete`, `std::free()`, etc. applied to a plain `T*`.
 Only owners should be deleted.
 * Flag `new`, `malloc()`, etc. assigned to a plain `T*`.
-Only owners should be responsible for deletion.
+Only owners should be responsible for deletion. -->
 
-### <a name="Rf-dangle"></a>F.43: Never (directly or indirectly) return a pointer or a reference to a local object
+* 标出作用于普通`T*`上的`delete`、`std::free()`等，只有拥有者应当被删除。
+* 标出分配给普通`T*`的`new`, `malloc()`等，只能拥有者有责任进行删除。
 
-##### Reason
+### <a name="Rf-dangle"></a>F.43: 永远不要(直接或间接地)返回指向局部对象的指针或引用
 
-To avoid the crashes and data corruption that can result from the use of such a dangling pointer.
+##### 原因
 
-##### Example, bad
+为了避免crash和可能会导致使用悬垂指针的数据损坏。
 
-After the return from a function its local objects no longer exist:
+##### 糟糕的示例
+
+当函数返回后，局部对象都不再存在：
 
     int* f()
     {
         int fx = 9;
-        return &fx;  // BAD
+        return &fx;  // 糟糕
     }
 
-    void g(int* p)   // looks innocent enough
+    void g(int* p)   // 看起来很无辜
     {
         int gx;
         cout << "*p == " << *p << '\n';
@@ -3253,16 +3255,16 @@ After the return from a function its local objects no longer exist:
     void h()
     {
         int* p = f();
-        int z = *p;  // read from abandoned stack frame (bad)
-        g(p);        // pass pointer to abandoned stack frame to function (bad)
+        int z = *p;  // read from abandoned stack frame (bad) 从已经丢弃的栈帧上读取 (糟糕)
+        g(p);        // pass pointer to abandoned stack frame to function (bad) 传递指向已经丢弃的栈帧的指针到函数 (糟糕)
     }
 
-Here on one popular implementation I got the output:
+在一个流行的实现上，我得到了输出:
 
     *p == 999
     gx == 999
 
-I expected that because the call of `g()` reuses the stack space abandoned by the call of `f()` so `*p` refers to the space now occupied by `gx`.
+这是我所期望的，因为`g()`的调用复用了被丢弃了的`f()`调用时的栈帧，所以`*p`指向的空间现在被`gx`占用。
 
 * Imagine what would happen if `fx` and `gx` were of different types.
 * Imagine what would happen if `fx` or `gx` was a type with an invariant.
