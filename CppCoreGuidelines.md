@@ -3709,85 +3709,81 @@ For passthrough functions that pass in parameters (by ordinary reference or by p
 * 触发一个诊断(消息/提示)，如果使用了`va_list`、`va_start`、`va_arg`。
 * 触发一个诊断(消息/提示)，如果将参数传递给了函数的`vararg`参数，但并没有在相应的地方提供该函数更具体类型的函数重载。修复方法：使用不同的函数，或者`[[suppress(types)]]`。
 
-# <a name="S-class"></a>C: Classes and class hierarchies
+# <a name="S-class"></a>C: 类和类层次结构
 
-A class is a user-defined type, for which a programmer can define the representation, operations, and interfaces.
-Class hierarchies are used to organize related classes into hierarchical structures.
+类是用户定义的类型，程序员可以为其定义表示、操作和接口。
+类层次结构用于将相关类组织成层次结构。
 
-Class rule summary:
+类规则的概述:
 
-* [C.1: Organize related data into structures (`struct`s or `class`es)](#Rc-org)
-* [C.2: Use `class` if the class has an invariant; use `struct` if the data members can vary independently](#Rc-struct)
-* [C.3: Represent the distinction between an interface and an implementation using a class](#Rc-interface)
-* [C.4: Make a function a member only if it needs direct access to the representation of a class](#Rc-member)
-* [C.5: Place helper functions in the same namespace as the class they support](#Rc-helper)
-* [C.7: Don't define a class or enum and declare a variable of its type in the same statement](#Rc-standalone)
-* [C.8: Use `class` rather than `struct` if any member is non-public](#Rc-class)
-* [C.9: Minimize exposure of members](#Rc-private)
+* [C.1: 将相关的数据组织成结构体(`struct`或`class`)](#Rc-org)
+* [C.2: 如果具有不变式，则使用`class`；如果数据成员之间彼此独立，使用`struct`](#Rc-struct)
+* [C.3: 使用类表示出接口和实现之间的区别](#Rc-interface)
+* [C.4: 只有在函数需要直接访问类的表示时，才将其作为成员](#Rc-member)
+* [C.5: 将辅助(helper)函数放在与其支持的类相同的名称空间中](#Rc-helper)
+* [C.7: 不要在同一语句中定义类或枚举类型，同时又声明该类型的变量](#Rc-standalone)
+* [C.8: 如果任何成员是非公共的，则使用`class`而不是`struct`](#Rc-class)
+* [C.9: 最小化暴露类成员](#Rc-private)
 
-Subsections:
+子章节:
 
-* [C.concrete: Concrete types](#SS-concrete)
-* [C.ctor: Constructors, assignments, and destructors](#S-ctor)
-* [C.con: Containers and other resource handles](#SS-containers)
-* [C.lambdas: Function objects and lambdas](#SS-lambdas)
-* [C.hier: Class hierarchies (OOP)](#SS-hier)
-* [C.over: Overloading and overloaded operators](#SS-overload)
-* [C.union: Unions](#SS-union)
+* [C.concrete: 具体类型](#SS-concrete)
+* [C.ctor: 构造函数、赋值、析构函数](#S-ctor)
+* [C.con: 容器和其它资源句柄](#SS-containers)
+* [C.lambdas: 函数对象和lambda](#SS-lambdas)
+* [C.hier: 类层次结构(OOP)](#SS-hier)
+* [C.over: 重载和运算符重载](#SS-overload)
+* [C.union: 联合体(union)](#SS-union)
 
-### <a name="Rc-org"></a>C.1: Organize related data into structures (`struct`s or `class`es)
+### <a name="Rc-org"></a>C.1: 将相关的数据组织成结构体(`struct`或`class`)
 
-##### Reason
+##### 原因
 
-Ease of comprehension.
-If data is related (for fundamental reasons), that fact should be reflected in code.
+易于理解，如果数据是相关的(出于基本原因)，那么这个事实应该反映在代码中。
 
-##### Example
+##### 示例
 
-    void draw(int x, int y, int x2, int y2);  // BAD: unnecessary implicit relationships
+    void draw(int x, int y, int x2, int y2);  // BAD: 不必要的隐式关系
     void draw(Point from, Point to);          // better
 
 ##### Note
 
-A simple class without virtual functions implies no space or time overhead.
+没有虚函数的简单没有空间和时间的额外开销。
 
 ##### Note
 
-From a language perspective `class` and `struct` differ only in the default visibility of their members.
+从语言上，看`class`和`struct`的区别只在于它们成员的默认可见性的不同。
 
 ##### Enforcement
 
-Probably impossible. Maybe a heuristic looking for data items used together is possible.
+或许是不可能被强制的，启发式地寻找一起使用的数据项或许是可以的。
 
-### <a name="Rc-struct"></a>C.2: Use `class` if the class has an invariant; use `struct` if the data members can vary independently
+### <a name="Rc-struct"></a>C.2: 如果具有不变式，则使用`class`；如果数据成员之间彼此独立，使用`struct`
 
-##### Reason
+##### 原因
 
-Readability.
-Ease of comprehension.
-The use of `class` alerts the programmer to the need for an invariant.
-This is a useful convention.
+可读性；易于理解；`class`可以提醒程序员需要一个不变式；有用的惯例。
 
 ##### Note
 
-An invariant is a logical condition for the members of an object that a constructor must establish for the public member functions to assume.
-After the invariant is established (typically by a constructor) every member function can be called for the object.
-An invariant can be stated informally (e.g., in a comment) or more formally using `Expects`.
+不变式只是对象成员间的逻辑条件，构造函数必须为公共成员函数建立该逻辑条件。
+一旦该不变式被建立(通常由构造函数)，该对象的成员函数都可以被调用。
+不变式可以被非正式的表示(如，在注释中)，或者使用`Expects`更正式地说明。
 
-If all data members can vary independently of each other, no invariant is possible.
+如果所有的数据成员之间可以独立地变化，那就不存在不变式。
 
-##### Example
+##### 示例
 
-    struct Pair {  // the members can vary independently
+    struct Pair {  // 成员之间可以独立地变化
         string name;
         int volume;
     };
 
-but:
+但是:
 
     class Date {
     public:
-        // validate that {yy, mm, dd} is a valid date and initialize
+        // 验证{yy, mm, dd}是合法的，然后初始化
         Date(int yy, Month mm, char dd);
         // ...
     private:
@@ -3798,34 +3794,34 @@ but:
 
 ##### Note
 
-If a class has any `private` data, a user cannot completely initialize an object without the use of a constructor.
-Hence, the class definer will provide a constructor and must specify its meaning.
-This effectively means the definer need to define an invariant.
+如果一个类有`private`数据，不使用构造函数，用法没办法完全初始化一个对象。
+因此，类的定义都需要提供一个构造函数，并指明它的用意。
+这实际上意味着类的定义者需要定义一个不变式。
 
-**See also**:
+**参见**:
 
-* [define a class with private data as `class`](#Rc-class)
-* [Prefer to place the interface first in a class](#Rl-order)
-* [minimize exposure of members](#Rc-private)
-* [Avoid `protected` data](#Rh-protected)
+* [将具有私有数据的类型定义为`class`](#Rc-class)
+* [在类中先放置接口](#Rl-order)
+* [最小化暴露类成员](#Rc-private)
+* [避免受保护数据(protect)](#Rh-protected)
 
 ##### Enforcement
 
-Look for `struct`s with all data private and `class`es with public members.
+寻找都是私有数据的`struct`类型，以及都是公开成员的`class`类型。
 
-### <a name="Rc-interface"></a>C.3: Represent the distinction between an interface and an implementation using a class
+### <a name="Rc-interface"></a>C.3: 使用类表示出接口和实现之间的区别
 
-##### Reason
+##### 原因
 
-An explicit distinction between interface and implementation improves readability and simplifies maintenance.
+接口和实现之间的显示区别提高的可读性和可维护性
 
-##### Example
+##### 示例
 
     class Date {
-        // ... some representation ...
+        // ... 一些表示 ...
     public:
         Date();
-        // validate that {yy, mm, dd} is a valid date and initialize
+        // 验证{yy, mm, dd}是合法的，并初始化
         Date(int yy, Month mm, char dd);
 
         int day() const;
@@ -3833,96 +3829,94 @@ An explicit distinction between interface and implementation improves readabilit
         // ...
     };
 
-For example, we can now change the representation of a `Date` without affecting its users (recompilation is likely, though).
+例如，我们可以改变`Date`的表示，但又不会影响到它的用户(可能需要重新编译)。
 
 ##### Note
 
-Using a class in this way to represent the distinction between interface and implementation is of course not the only way.
-For example, we can use a set of declarations of freestanding functions in a namespace, an abstract base class, or a template function with concepts to represent an interface.
-The most important issue is to explicitly distinguish between an interface and its implementation "details."
-Ideally, and typically, an interface is far more stable than its implementation(s).
+表现接口和实现之间的区别，当然不只有使用类这一种方式，
+例如，我们可以使用一组在相同命名空间独立声明的函数、抽象的基类、或者使用具有概念的模板函数来表示一个接口。
+最重要的问题是显示式地区分接口和它的实现"细节"，
+理想(通常)情况下，接口比它的实现要稳定得多。
 
 ##### Enforcement
 
 ???
 
-### <a name="Rc-member"></a>C.4: Make a function a member only if it needs direct access to the representation of a class
+### <a name="Rc-member"></a>C.4: 只有在函数需要直接访问类的表示时，才将其作为成员
 
 ##### Reason
 
-Less coupling than with member functions, fewer functions that can cause trouble by modifying object state, reduces the number of functions that needs to be modified after a change in representation.
+成员函数间更少的耦合，修改对象而引起麻烦的函数更少，当类的表示发生变化时，需要修改的函数数量也更少。
 
 ##### Example
 
     class Date {
-        // ... relatively small interface ...
+        // ... 相关的少量接口 ...
     };
 
-    // helper functions:
+    // 辅助函数(helper functions):
     Date next_weekday(Date);
     bool operator==(Date, Date);
 
-The "helper functions" have no need for direct access to the representation of a `Date`.
+辅助函数(helper function)没有必要直接访问`Date`的表示。
 
 ##### Note
 
-This rule becomes even better if C++ gets ["uniform function call"](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0251r0.pdf).
+如果C++有["uniform function call"](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0251r0.pdf)，这条规则会变得更好。
 
-##### Exception
+##### 例外
 
-The language requires `virtual` functions to be members, and not all `virtual` functions directly access data.
-In particular, members of an abstract class rarely do.
+C++语言要求`virtual`函数作为成员，并不是所有的`virtual`函数都会直接访问数据，特别地，抽象类的成员函数很少这样做。
 
-Note [multi-methods](https://parasol.tamu.edu/~yuriys/papers/OMM10.pdf).
+注意，[multi-methods](https://parasol.tamu.edu/~yuriys/papers/OMM10.pdf)
 
-##### Exception
+##### 例外
 
-The language requires operators `=`, `()`, `[]`, and `->` to be members.
+C++语言要求操作符`=`、`()`、`[]`和`->`是成员函数。
 
-##### Exception
+##### 例外
 
-An overload set may have some members that do not directly access `private` data:
+一组重载的成员函数中可能会有一些不直接访问私有数据：
 
     class Foobar {
     public:
-        void foo(long x)    { /* manipulate private data */ }
+        void foo(long x)    { /*操作私有数据*/ }
         void foo(double x) { foo(std::lround(x)); }
         // ...
     private:
         // ...
     };
 
-##### Exception
+##### 例外
 
-Similarly, a set of functions may be designed to be used in a chain:
+类似地，一组成员函数可能被设计成在调用链中使用。
 
     x.scale(0.5).rotate(45).set_color(Color::red);
 
-Typically, some but not all of such functions directly access `private` data.
+通常，只有一些(并非所有)函数会直接访问私有数据。
 
-##### Enforcement
+##### 实施
 
-* Look for non-`virtual` member functions that do not touch data members directly.
-The snag is that many member functions that do not need to touch data members directly do.
-* Ignore `virtual` functions.
-* Ignore functions that are part of an overload set out of which at least one function accesses `private` members.
-* Ignore functions returning `this`.
+* 寻找非`virtual`且不直接接触数据成员的成员函数，问题在于，许多不需要直接接触数据成员的成员函数会这样做。
+* 忽略`virtual`函数。
+* 忽略作为重载集合中的函数，其中至少有一个函数访问私有(数据)成员。
+* 忽略返回`this`的成员函数。
 
-### <a name="Rc-helper"></a>C.5: Place helper functions in the same namespace as the class they support
+### <a name="Rc-helper"></a>C.5: 将辅助函数放在与其支持的类相同的名称空间中
 
 ##### Reason
 
-A helper function is a function (usually supplied by the writer of a class) that does not need direct access to the representation of the class, yet is seen as part of the useful interface to the class.
-Placing them in the same namespace as the class makes their relationship to the class obvious and allows them to be found by argument dependent lookup.
+辅助(helper)函数是一个不需要直接访问类的表示的函数(通常由类的编写者提供)，但被视为类的有用接口的一部分。
+将它们放在与类相同的命名空间(namespace)中，可以使它们与类的关系变得更加明显，并允许通过依赖于参数的查找找到它们。
 
 ##### Example
 
-    namespace Chrono { // here we keep time-related services
+    namespace Chrono { // 这里，我们提供时间相关的服务
 
         class Time { /* ... */ };
         class Date { /* ... */ };
 
-        // helper functions:
+        // 辅助函数：
         bool operator==(Date, Date);
         Date next_weekday(Date);
         // ...
@@ -3930,75 +3924,73 @@ Placing them in the same namespace as the class makes their relationship to the 
 
 ##### Note
 
-This is especially important for [overloaded operators](#Ro-namespace).
+这对[运算符重载](#Ro-namespace)特别重要。
 
 ##### Enforcement
 
-* Flag global functions taking argument types from a single namespace.
+* 标出只在一个namespace中获取参数的全局函数。
 
-### <a name="Rc-standalone"></a>C.7: Don't define a class or enum and declare a variable of its type in the same statement
+<!-- ### <a name="Rc-standalone"></a>C.7: Don't define a class or enum and declare a variable of its type in the same statement -->
+### <a name="Rc-standalone"></a>C.7: 不要在同一语句中定义类或枚举类型，同时又声明该类型的变量
 
 ##### Reason
 
-Mixing a type definition and the definition of another entity in the same declaration is confusing and unnecessary.
+在同一个声明中混合类型定义和实体的定义是令人困惑的和不必要的。
 
-##### Example, bad
+##### 糟糕的例子
 
     struct Data { /*...*/ } data{ /*...*/ };
 
-##### Example, good
+##### 好的例子
 
     struct Data { /*...*/ };
     Data data{ /*...*/ };
 
 ##### Enforcement
 
-* Flag if the `}` of a class or enumeration definition is not followed by a `;`. The `;` is missing.
+* 如果类或枚举定义的`}`后面不是跟着`;`，则标记它缺少`;`。
 
-### <a name="Rc-class"></a>C.8: Use `class` rather than `struct` if any member is non-public
+### <a name="Rc-class"></a>C.8: 如果任何成员是非公共的，则使用`class`而不是`struct`
 
 ##### Reason
 
-Readability.
-To make it clear that something is being hidden/abstracted.
-This is a useful convention.
+可读性。
+清楚地说明了某些东西被隐藏/抽象了。
+这是一个有用的约定。
 
-##### Example, bad
+##### 糟糕的例子
 
     struct Date {
         int d, m;
 
         Date(int i, Month m);
-        // ... lots of functions ...
+        // ... 很多函数 ...
     private:
         int y;  // year
     };
 
-There is nothing wrong with this code as far as the C++ language rules are concerned,
-but nearly everything is wrong from a design perspective.
-The private data is hidden far from the public data.
-The data is split in different parts of the class declaration.
-Different parts of the data have different access.
-All of this decreases readability and complicates maintenance.
+如果只关心C++的语言规则，这段代码是没有什么问题的。
+但是从设计的视角看，几乎所有都是有问题的：私有数据离公有数据太远了；在类的声明中，数据被分成了不同的部分；不同部分的数据具有不同的访问属性。
+所有这些都降低了可读性，增加了维护的复杂性。
 
 ##### Note
 
-Prefer to place the interface first in a class, [see NL.16](#Rl-order).
+倾向于在类中先放置接口，参见[NL.16](#Rl-order)。
 
 ##### Enforcement
 
-Flag classes declared with `struct` if there is a `private` or `protected` member.
+标出声明为`struct`的类型，如果该类型有私有或受保护的成员。
 
-### <a name="Rc-private"></a>C.9: Minimize exposure of members
+### <a name="Rc-private"></a>C.9: 最小化暴露类成员
 
 ##### Reason
 
-Encapsulation.
-Information hiding.
-Minimize the chance of unintended access.
-This simplifies maintenance.
+封装；
+信息隐藏；
+最小化意外的访问；
+让维护更简单。
 
-##### Example
+##### 示例
 
     template<typename T, typename U>
     struct pair {
@@ -4013,74 +4005,79 @@ This may be exactly what we want, but if we want to enforce a relation among mem
 and enforce that relation (invariant) through constructors and member functions.
 For example:
 
+无论我们在`//`部分怎么做，任何`pair`的用户都可以随意独立地修改`a`和`b`。
+在一个大型的代码库中，很难定位到哪些代码对`pair`的成员变量做了什么。
+这可能正是我们想要的，但是如果我们想要加强成员之间的关系，我们需要把它们变为`private`，并使用构造函数和成员函数来加强这种关系(不变式)。
+例如：
+
     class Distance {
     public:
         // ...
         double meters() const { return magnitude*unit; }
         void set_unit(double u)
         {
-                // ... check that u is a factor of 10 ...
-                // ... change magnitude appropriately ...
+                <!-- // ... check that u is a factor of 10 ... -->
+                // ... 检查10是否为u的因数(译注：原文可能写反了)
+                // ... 适当地改变大小 ...
                 unit = u;
         }
         // ...
     private:
         double magnitude;
-        double unit;    // 1 is meters, 1000 is kilometers, 0.001 is millimeters, etc.
+        double unit;    // 1是米，1000是千米， 0.001是毫米，等等
     };
 
 ##### Note
 
-If the set of direct users of a set of variables cannot be easily determined, the type or usage of that set cannot be (easily) changed/improved.
-For `public` and `protected` data, that's usually the case.
+如果无法轻松确定一组变量的直接用户群，则无法(轻松)更改/改进该组变量的类型或用法。
+公有和受保护的数据，通常就是这种情况。
 
 ##### Example
 
-A class can provide two interfaces to its users.
-One for derived classes (`protected`) and one for general users (`public`).
-For example, a derived class might be allowed to skip a run-time check because it has already guaranteed correctness:
+类可以提供两个接口给它的用户，一个给派生类(`protected`)，另一个给普通的用户(`public`)。
+例如，一个派生类可能会允许跳过运行时检查，因为它已经保证了正确性。
 
     class Foo {
     public:
         int bar(int x) { check(x); return do_bar(x); }
         // ...
     protected:
-        int do_bar(int x); // do some operation on the data
+        int do_bar(int x); // 在数据上做一些操作
         // ...
     private:
-        // ... data ...
+        // ... 数据 ...
     };
 
     class Dir : public Foo {
         //...
         int mem(int x, int y)
         {
-            /* ... do something ... */
-            return do_bar(x + y); // OK: derived class can bypass check
+            /* ... 做些什么 ... */
+            return do_bar(x + y); // OK: 派生类可以绕过检查
         }
     };
 
     void user(Foo& x)
     {
-        int r1 = x.bar(1);      // OK, will check
-        int r2 = x.do_bar(2);   // error: would bypass check
+        int r1 = x.bar(1);      // OK, 将会进行检查
+        int r2 = x.do_bar(2);   // 错误: 会绕过检查(译注：可能会有编译错误，除非user是Foo的友元函数)
         // ...
     }
 
 ##### Note
 
-[`protected` data is a bad idea](#Rh-protected).
+[`protected`数据是一个糟糕的想法](#Rh-protected).
 
 ##### Note
 
-Prefer the order `public` members before `protected` members before `private` members [see](#Rl-order).
+选择这种放置顺序：首先是`public`成员，然后是`protected`成员，最后是`private`成员，参见[NL.16: 使用约定的类成员声明顺序](#Rl-order)
 
 ##### Enforcement
 
-* [Flag protected data](#Rh-protected).
-* Flag mixtures of `public` and private `data`
+* 标出受保护的数据,参见[C.133: 避免使用受保护的数据](#Rh-protected)
+* 标出混合使用`public`和`private`的类。
 
-## <a name="SS-concrete"></a>C.concrete: Concrete types
+## <a name="SS-concrete"></a>C.concrete: 具体类型
 
 One ideal for a class is to be a regular type.
 That means roughly "behaves like an `int`." A concrete type is the simplest kind of class.
@@ -6486,7 +6483,7 @@ Designing rules for classes in a hierarchy summary:
 * [C.130: For making deep copies of polymorphic classes prefer a virtual `clone` function instead of copy construction/assignment](#Rh-copy)
 * [C.131: Avoid trivial getters and setters](#Rh-get)
 * [C.132: Don't make a function `virtual` without reason](#Rh-virtual)
-* [C.133: Avoid `protected` data](#Rh-protected)
+* [C.133: 避免使用受保护的数据](#Rh-protected)
 * [C.134: Ensure all non-`const` data members have the same access level](#Rh-public)
 * [C.135: Use multiple inheritance to represent multiple distinct interfaces](#Rh-mi-interface)
 * [C.136: Use multiple inheritance to represent the union of implementation attributes](#Rh-mi-implementation)
@@ -7082,7 +7079,7 @@ This kind of "vector" isn't meant to be used as a base class at all.
 * Flag a class with virtual functions but no derived classes.
 * Flag a class where all member functions are virtual and have implementations.
 
-### <a name="Rh-protected"></a>C.133: Avoid `protected` data
+### <a name="Rh-protected"></a>C.133: 避免使用受保护的数据
 
 ##### Reason
 
@@ -20327,7 +20324,7 @@ Naming and layout rules:
 * [NL.10: Prefer `underscore_style` names](#Rl-camel)
 * [NL.11: Make literals readable](#Rl-literals)
 * [NL.15: Use spaces sparingly](#Rl-space)
-* [NL.16: Use a conventional class member declaration order](#Rl-order)
+* [NL.16: 使用约定的类成员声明顺序](#Rl-order)
 * [NL.17: Use K&R-derived layout](#Rl-knr)
 * [NL.18: Use C++-style declarator layout](#Rl-ptr)
 * [NL.19: Avoid names that are easily misread](#Rl-misread)
@@ -20693,7 +20690,7 @@ It is easy to make a typo in a long string of integers.
 
 Flag long digit sequences. The trouble is to define "long"; maybe 7.
 
-### <a name="Rl-order"></a>NL.16: Use a conventional class member declaration order
+### <a name="Rl-order"></a>NL.16: 使用约定的类成员声明顺序
 
 ##### Reason
 
