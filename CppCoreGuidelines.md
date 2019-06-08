@@ -250,7 +250,7 @@ You can look at design concepts used to express the rules:
 
 ## <a name="SS-non"></a>不是我们的目标
 
-并不打算让这些规则算是最小或正交的，特别是，通用规则可能很简单，但无法强制执行，而且，通常很难理解一般规则的含义。更细化的规则通常更容易理解和执行，但是如果没有通用规则，它们只是一长串特殊情况的列表。我们旨在提供能帮助新手和支持专家使用的规则，有些规则可以完全强制执行，但另一些则是启发式的。
+并不打算让这些规则是最小或正交的，特别是，通用规则可能很简单，但无法强制执行，而且，通常很难理解一般规则的含义。更细化的规则通常更容易理解和执行，但是如果没有通用规则，它们只是一长串特殊情况的列表。我们旨在提供能帮助新手和支持专家使用的规则，有些规则可以完全强制执行，但另一些则是启发式的。
 
 These rules are not meant to be read serially, like a book.
 You can browse through them using the links.
@@ -406,29 +406,26 @@ Recommended information sources can be found in [the references](#S-references).
 
 每个章节(如"P"表示“哲学”)和子章节（如"c.hier"表示"类层次结构(OOP)"）都有一个便于搜索和引用的缩写，主要章节的缩写也会使用规则编号(如"C.11"表示“规范具体类型”)。
 
-# <a name="S-philosophy"></a>P: Philosophy
+# <a name="S-philosophy"></a>P: 哲学
 
-The rules in this section are very general.
+这部分规则是非常通用的，这些哲学规则的概述：
 
-Philosophy rules summary:
+* [P.1: 代码中直接表明意图](#Rp-direct)
+* [P.2: 使用符合IOS标准的C++](#Rp-Cplusplus)
+* [P.3: 表达意图](#Rp-what)
+* [P.4: 理想情况下，程序应当是静态类型安全的](#Rp-typesafe)
+* [P.5: 优先编译时检查而不是运行时检查](#Rp-compile-time)
+* [P.6: 编译时无法做的检查应当在运行时做](#Rp-run-time)
+* [P.7: 提前捕获运行时错误](#Rp-early)
+* [P.8: 勿泄漏任务资源](#Rp-leak)
+* [P.9: 不要浪费时间和空间](#Rp-waste)
+* [P.10: 优先使用不可变数据，而非可变数据](#Rp-mutable)
+* [P.11: 封装混乱的结果，而不是分散在代码中](#Rp-library)
+* [P.12: 适当使用支持工具](#Rp-tools)
+* [P.13: 适当使用支持库](#Rp-lib)
 
-* [P.1: Express ideas directly in code](#Rp-direct)
-* [P.2: Write in ISO Standard C++](#Rp-Cplusplus)
-* [P.3: Express intent](#Rp-what)
-* [P.4: Ideally, a program should be statically type safe](#Rp-typesafe)
-* [P.5: Prefer compile-time checking to run-time checking](#Rp-compile-time)
-* [P.6: What cannot be checked at compile time should be checkable at run time](#Rp-run-time)
-* [P.7: Catch run-time errors early](#Rp-early)
-* [P.8: Don't leak any resources](#Rp-leak)
-* [P.9: Don't waste time or space](#Rp-waste)
-* [P.10: Prefer immutable data to mutable data](#Rp-mutable)
-* [P.11: Encapsulate messy constructs, rather than spreading through the code](#Rp-library)
-* [P.12: Use supporting tools as appropriate](#Rp-tools)
-* [P.13: Use support libraries as appropriate](#Rp-lib)
-
-Philosophical rules are generally not mechanically checkable.
-However, individual rules reflecting these philosophical themes are.
-Without a philosophical basis, the more concrete/specific/checkable rules lack rationale.
+哲学性的规则一般不能机械化地检查，然而，独立的规则反映了这些哲学主题。
+没有哲学基础，更具体/特定/可检查的规则会缺乏基本原理的支持。
 
 ### <a name="Rp-direct"></a>P.1: 代码中直接表明意图
 
@@ -777,7 +774,7 @@ portability will be impacted.
 * (指针，个数)类型的操口（这可以给出非常多的由于兼容性而无法修复的例子）
 * ???
 
-### <a name="Rp-early"></a>P.7: Catch run-time errors early
+### <a name="Rp-early"></a>P.7: 提前捕获运行时错误
 
 ##### Reason
 
