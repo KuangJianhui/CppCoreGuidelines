@@ -2541,7 +2541,7 @@ If an exception is not supposed to be thrown, the program cannot be assumed to c
 
 ##### Note
 
-我们可以静态地捕捉到悬垂指针，所以不需要依赖于资源管理来避免悬垂指针。
+我们可以静态地捕获到悬垂指针，所以不需要依赖于资源管理来避免悬垂指针。
 
 **也参见**:
 
@@ -2957,7 +2957,7 @@ C++98的标准库已经使用了这种(多返回值)风格，因为`pair`就像�
 
     void use2(span<int> p, zstring s, owner<int*> q)
     {
-        p[p.size() - 1] = 666; // OK, 范围错误可以被捕捉到
+        p[p.size() - 1] = 666; // OK, 范围错误可以被捕获到
         cout << s; // OK
         delete q;  // OK
     }
@@ -3266,34 +3266,34 @@ Only owners should be responsible for deletion. -->
 
 这是我所期望的，因为`g()`的调用复用了被丢弃了的`f()`调用时的栈帧，所以`*p`指向的空间现在被`gx`占用。
 
-* Imagine what would happen if `fx` and `gx` were of different types.
-* Imagine what would happen if `fx` or `gx` was a type with an invariant.
-* Imagine what would happen if more that dangling pointer was passed around among a larger set of functions.
-* Imagine what a cracker could do with that dangling pointer.
+* 想像一下，如果`fx`和`gx`是不同的类型会发生什么。
+* 想像一下，如果`fx`和`gx`是不变量类型会发生什么。
+* 想像一下，如果在很多的函数之间传递更多的悬垂指针会发生什么。
+* 想像一下，黑客可能会用悬垂指针做什么。
 
-Fortunately, most (all?) modern compilers catch and warn against this simple case.
+幸运的是，大多数(全部?)的现代编译器都能捕获并警告这种简单的情况。
+
 
 ##### Note
 
-This applies to references as well:
+这也适用于引用：
 
     int& f()
     {
         int x = 7;
         // ...
-        return x;  // Bad: returns reference to object that is about to be destroyed
+        return x;  // Bad: 返回即将销毁对象的引用
     }
 
 ##### Note
 
-This applies only to non-`static` local variables.
-All `static` variables are (as their name indicates) statically allocated, so that pointers to them cannot dangle.
+这只适用于非`static`的局部变量，所有的`static`变量(如它们的名字所示)都是静态分配的，所以指向他们的指针不会悬垂(dangle)。
 
-##### Example, bad
+##### 糟糕的示例
 
-Not all examples of leaking a pointer to a local variable are that obvious:
+并非所有指向局部变量的指针泄漏都是那样明显的：
 
-    int* glob;       // global variables are bad in so many ways
+    int* glob;       // 全局变量在很多方面都很糟糕
 
     template<class T>
     void steal(T x)
@@ -3313,38 +3313,36 @@ Not all examples of leaking a pointer to a local variable are that obvious:
         cout << *glob << '\n';
     }
 
-Here I managed to read the location abandoned by the call of `f`.
-The pointer stored in `glob` could be used much later and cause trouble in unpredictable ways.
+在这里，我设法读到了被`f`的调用所丢弃的位置。
+存储在`glob`中的指针可以在更晚的时候被使用，并以不可预知的方式造成麻烦。
 
 ##### Note
 
-The address of a local variable can be "returned"/leaked by a return statement, by a `T&` out-parameter, as a member of a returned object, as an element of a returned array, and more.
+局部变量地址泄漏的方式有：return语句、`T&`输出参数、返回对象的成员变量、返回数组的元素、以及更多。
 
 ##### Note
 
-Similar examples can be constructed "leaking" a pointer from an inner scope to an outer one;
-such examples are handled equivalently to leaks of pointers out of a function.
+可以构造类似内部作用域"泄漏"到外部作用域这样的例子，对这类例子的处理类似于指针泄漏到函数外。
 
-A slightly different variant of the problem is placing pointers in a container that outlives the objects pointed to.
+这个问题的一个稍微不同的变种是，将指针放到超过对象生命期的容器中。
 
-**See also**: Another way of getting dangling pointers is [pointer invalidation](#???).
-It can be detected/prevented with similar techniques.
+**也见** 获取悬垂指针的另一种方式是[指针失效](#???)，可以用类似的技术来检测和预防。。
 
 ##### Enforcement
 
-* Compilers tend to catch return of reference to locals and could in many cases catch return of pointers to locals.
-* Static analysis can catch many common patterns of the use of pointers indicating positions (thus eliminating dangling pointers)
+* 编译器倾向于捕获对局部变量的引用的返回，并且在很多情况下可以捕获指向局部变量的指针的返回。
+* 静态分析可以捕获许多使用指针表示位置的常见模式(从而消除悬空指针)。
 
-### <a name="Rf-return-ref"></a>F.44: Return a `T&` when copy is undesirable and "returning no object" isn't needed
+### <a name="Rf-return-ref"></a>F.44: 当不需要复制且不需要返回空对象时，返回`T&`
 
-##### Reason
+##### 原因
 
-The language guarantees that a `T&` refers to an object, so that testing for `nullptr` isn't necessary.
+C++语言保证了`T&`引用一个对象，所以不需要检查`nullptr`。
 
-**See also**: The return of a reference must not imply transfer of ownership:
-[discussion of dangling pointer prevention](#???) and [discussion of ownership](#???).
+<!-- [discussion of dangling pointer prevention](#???) and [discussion of ownership](#???). -->
+**也参见** 返回引用必须没有隐含的所有权转移：[预防悬垂指针的讨论](#???)和[所有权的讨论](#???)
 
-##### Example
+##### 示例
 
     class Car
     {
@@ -3358,77 +3356,74 @@ The language guarantees that a `T&` refers to an object, so that testing for `nu
     void use()
     {
         Car c;
-        wheel& w0 = c.get_wheel(0); // w0 has the same lifetime as c
+        wheel& w0 = c.get_wheel(0); // w0的生命周期与c相同
     }
 
-##### Enforcement
+##### 实施
 
-Flag functions where no `return` expression could yield `nullptr`
+标记出没有`return`语句可以返回`nullptr`的函数。
 
-### <a name="Rf-return-ref-ref"></a>F.45: Don't return a `T&&`
+### <a name="Rf-return-ref-ref"></a>F.45: 不要返回`T&&`
 
-##### Reason
+##### 原因
 
-It's asking to return a reference to a destroyed temporary object.
-A `&&` is a magnet for temporary objects.
+它请求返回对已销毁临时对象的引用，`&&`和临时对象是联系在一起的。
 
-##### Example
+##### 示例
 
-A returned rvalue reference goes out of scope at the end of the full expression to which it is returned:
+返回的右值引用在整个返回表达式结束之后也就超出的作用域范围。
 
-    auto&& x = max(0, 1);   // OK, so far
-    foo(x);                 // Undefined behavior
+    auto&& x = max(0, 1);   // 目前不是没有问题的
+    foo(x);                 // 未定义的行为(译注：已经超出了右值引用的作用域范围)
 
-This kind of use is a frequent source of bugs, often incorrectly reported as a compiler bug.
-An implementer of a function should avoid setting such traps for users.
+这种使用(返回右值引用)是常见的错误来源，经常被错误地报告为编译器bug。
+函数的实现者应该避免为用户设置这样的陷阱。
 
-The [lifetime safety profile](#SS-lifetime) will (when completely implemented) catch such problems.
+[lifetime safety profile](#SS-lifetime)(在完全完成后)捕获这种问题。
 
-
-##### Example
+##### 示例
 
 Returning an rvalue reference is fine when the reference to the temporary is being passed "downward" to a callee;
 then, the temporary is guaranteed to outlive the function call (see [F.18](#Rf-consume) and [F.19](#Rf-forward)).
 However, it's not fine when passing such a reference "upward" to a larger caller scope.
 For passthrough functions that pass in parameters (by ordinary reference or by perfect forwarding) and want to return values, use simple `auto` return type deduction (not `auto&&`).
 
-Assume that `F` returns by value:
+假设`F`是返回“值类型”的
 
     template<class F>
     auto&& wrapper(F f)
     {
-        log_call(typeid(f)); // or whatever instrumentation
-        return f();          // BAD: returns a reference to a temporary
+        log_call(typeid(f)); // 或其它仪表化工具
+        return f();          // 糟糕：返回了临时对象的引用
     }
 
-Better:
+更好:
 
     template<class F>
     auto wrapper(F f)
     {
-        log_call(typeid(f)); // or whatever instrumentation
+        log_call(typeid(f)); // 或其它仪表化工具
         return f();          // OK
     }
 
 
-##### Exception
+##### 例外
 
-`std::move` and `std::forward` do return `&&`, but they are just casts -- used by convention only in expression contexts where a reference to a temporary object is passed along within the same expression before the temporary is destroyed. We don't know of any other good examples of returning `&&`.
+`std::move`和`std::forward`确实返回了`&&`，但是它们只是强制类型转换 -- 约定仅在表达式上下文中使用，其中对临时对象的引用在销毁临时对象之前在同一表达式中传递。关于返回`&&`，我们不知道还有什么更好的例子。
 
-##### Enforcement
+##### 实施
 
-Flag any use of `&&` as a return type, except in `std::move` and `std::forward`.
+标记除`std::move`和`std::forward`之外任何返回`&&`的函数。
 
-### <a name="Rf-main"></a>F.46: `int` is the return type for `main()`
+### <a name="Rf-main"></a>F.46: `int`是`main()`的返回值类型 
 
-##### Reason
+##### 原因
 
-It's a language rule, but violated through "language extensions" so often that it is worth mentioning.
-Declaring `main` (the one global `main` of a program) `void` limits portability.
+这是一个语言规则，但是由于“语言扩展”的存在而经常被违反，因此值得一提：声明`main`(程序入口)为`void`限制了可移植性。
 
-##### Example
+##### 示例
 
-        void main() { /* ... */ };  // bad, not C++
+        void main() { /* ... */ };  // 糟糕，不是C++
 
         int main()
         {
@@ -3437,53 +3432,47 @@ Declaring `main` (the one global `main` of a program) `void` limits portability.
 
 ##### Note
 
-We mention this only because of the persistence of this error in the community.
+我们之所以提到这一点，是因为这个错误在社区中持续存在。
 
-##### Enforcement
+##### 实施
 
-* The compiler should do it
-* If the compiler doesn't do it, let tools flag it
+* 应该编译器为做。
+* 如果编译器没做，用工具标出它。
 
-### <a name="Rf-assignment-op"></a>F.47: Return `T&` from assignment operators
+### <a name="Rf-assignment-op"></a>F.47: 从赋值操作符返回`T&`
 
-##### Reason
+##### 原因
 
-The convention for operator overloads (especially on value types) is for
-`operator=(const T&)` to perform the assignment and then return (non-`const`)
-`*this`.  This ensures consistency with standard-library types and follows the
-principle of "do as the ints do."
+运算符重载(特别是值类型)的习惯是由`operator=(const T&)`执行赋值，然后返回(非`const`的)`*this`。这保证了与标准库类型的一致性，以及遵循了"像int那样做"(do as the ints do)。
 
 ##### Note
 
-Historically there was some guidance to make the assignment operator return `const T&`.
-This was primarily to avoid code of the form `(a = b) = c` -- such code is not common enough to warrant violating consistency with standard types.
+从历史上看，有一些指导要求赋值操作符返回`const T&`，这主要是为了避免`(a = b) = c`的形式 -- 这些代码并没有常见到可以说明违反了与标准类型的一致性。
 
-##### Example
+##### 示例
 
     class Foo
     {
      public:
         ...
         Foo& operator=(const Foo& rhs) {
-          // Copy members.
+          // 复制成员变量.
           ...
           return *this;
         }
     };
 
-##### Enforcement
+##### 实施
 
-This should be enforced by tooling by checking the return type (and return
-value) of any assignment operator.
+应当使用工具来强制性地检查赋值操作符的返回类型(以及返回值)。
 
+### <a name="Rf-return-move-local"></a>F.48: 不要`return std::move(local)`
 
-### <a name="Rf-return-move-local"></a>F.48: Don't `return std::move(local)`
+##### 原因
 
-##### Reason
+有了保证的复制消除(copy elision)，现在在返回语句中明确使用`std::move`几乎是一种多余的做法。
 
-With guaranteed copy elision, it is now almost always a pessimization to expressly use `std::move` in a return statement.
-
-##### Example, bad
+##### 糟糕的例子
 
     S f()
     {
@@ -3491,7 +3480,7 @@ With guaranteed copy elision, it is now almost always a pessimization to express
       return std::move(result);
     }
 
-##### Example, good
+##### 好的例子
 
     S f()
     {
@@ -3499,26 +3488,23 @@ With guaranteed copy elision, it is now almost always a pessimization to express
       return result;
     }
 
-##### Enforcement
+##### 实施
 
-This should be enforced by tooling by checking the return expression .
+应当使用工具来强制性地检查返回表达式。
 
+### <a name="Rf-capture-vs-overload"></a>F.50: 当函数不起作用时使用lambda(捕获局部变量，或编写局部函数) Use a lambda when a function won't do (to capture local variables, or to write a local function)
 
-### <a name="Rf-capture-vs-overload"></a>F.50: Use a lambda when a function won't do (to capture local variables, or to write a local function)
+##### 原因
 
-##### Reason
+函数不能捕获局部变量或在局部范围内声明；如果你需要这些东西，在可能的情况下选择lambda，在不需要的地方选择手写的函数对象。另一方面，lambda和函数对象不能进行重载；如果需要重载，最好使用函数(这些地方会让lambda过于浮夸)。如果这两种方法都可行，最好编写一个函数(译注：函数可以复用，Lambda却不可以复用)；使用最简单的工具。
 
-Functions can't capture local variables or be declared at local scope; if you need those things, prefer a lambda where possible, and a handwritten function object where not. On the other hand, lambdas and function objects don't overload; if you need to overload, prefer a function (the workarounds to make lambdas overload are ornate). If either will work, prefer writing a function; use the simplest tool necessary.
+##### 示例
 
-##### Example
-
-    // writing a function that should only take an int or a string
-    // -- overloading is natural
+    // 写一个只接受int或string的函数，重载是自然的选择
     void f(int);
     void f(const string&);
 
-    // writing a function object that needs to capture local state and appear
-    // at statement or expression scope -- a lambda is natural
+    // 写一个需要声明或表达式作用域内捕获局部状态的函数，lambda是自然的选择
     vector<work> v = lots_of_work();
     for (int tasknum = 0; tasknum < max; ++tasknum) {
         pool.run([=, &v]{
@@ -3531,77 +3517,73 @@ Functions can't capture local variables or be declared at local scope; if you ne
     }
     pool.join();
 
-##### Exception
+##### 例外
 
-Generic lambdas offer a concise way to write function templates and so can be useful even when a normal function template would do equally well with a little more syntax. This advantage will probably disappear in the future once all functions gain the ability to have Concept parameters.
+泛型lambda为编译函数模板提供了一个简单的方式，即使是普通函数模板只需要多一点点的语法也能达到同样目标的情况下也是有用的。不过，未来一旦所有的函数都能拥有概念参数(Concept parameter)，这种优势就会消失。
 
 ##### Enforcement
 
-* Warn on use of a named non-generic lambda (e.g., `auto x = [](int i){ /*...*/; };`) that captures nothing and appears at global scope. Write an ordinary function instead.
+* 如果一个具名的泛型lambda(例如，`auto x = [](int i){ /*...*/; };`)的capture列表为空且定义在全局空间，则给出警告，使用普通函数代替。
 
-### <a name="Rf-default-args"></a>F.51: Where there is a choice, prefer default arguments over overloading
+### <a name="Rf-default-args"></a>F.51: 如果可以，选择默认参数而不是重载
 
-##### Reason
+##### 原因
 
-Default arguments simply provide alternative interfaces to a single implementation.
-There is no guarantee that a set of overloaded functions all implement the same semantics.
-The use of default arguments can avoid code replication.
+默认参数只为单个实现提供了可选的接口；不能保证一组重载函数都实现相同的语义；使用默认参数可以避免代码重复。
 
 ##### Note
 
-There is a choice between using default argument and overloading when the alternatives are from a set of arguments of the same types.
-For example:
+当可选项来自一组相同类型的参数时，可以在使用默认参数和重载之间进行选择，例如:
 
     void print(const string& s, format f = {});
 
-as opposed to
+截然相反的是：
 
-    void print(const string& s);  // use default format
+    void print(const string& s);  // 使用默认参数
     void print(const string& s, format f);
 
-There is not a choice when a set of functions are used to do a semantically equivalent operation to a set of types. For example:
+当一组函数用于对一组类型执行语义上等价的操作时，则没有选择，例如:
 
     void print(const char&);
     void print(int);
     void print(zstring);
 
-##### See also
+##### 参见
 
+[虚函数的默认参数](#Rh-virtual-default-arg)
 
-[Default arguments for virtual functions](#Rh-virtual-default-arg)
+##### 实施
 
-##### Enforcement
+* 给出警告，如果一组重载函数具有相同的前缀参数(例如，`f(int)`、 `f(int, const string&)`、 `f(int, const string&, double)`)。注意，如果在实践中不太实用，请检查该实施措施。
 
-* Warn on an overload set where the overloads have a common prefix of parameters (e.g., `f(int)`, `f(int, const string&)`, `f(int, const string&, double)`). (Note: Review this enforcement if it's too noisy in practice.)
-
-### <a name="Rf-reference-capture"></a>F.52: Prefer capturing by reference in lambdas that will be used locally, including passed to algorithms
+### <a name="Rf-reference-capture"></a>F.52: 如果只是局部地使用，包括传递给算法，选择在lambda中使用引用进行捕获
 
 ##### Reason
 
-For efficiency and correctness, you nearly always want to capture by reference when using the lambda locally. This includes when writing or calling parallel algorithms that are local because they join before returning.
+为了提高效率和正确性，在局部使用lambda时，您几乎总是希望通过引用来捕获变量，这包括在编写或调用本地的并行算法，因为它们在返回之前是连接在一起的。
 
-##### Discussion
+##### 讨论
 
-The efficiency consideration is that most types are cheaper to pass by reference than by value.
+考虑到效率，大多数类型通过引用传递比通过值传递消耗更少。
 
-The correctness consideration is that many calls want to perform side effects on the original object at the call site (see example below). Passing by value prevents this.
+考虑到正确性，很多调用都想在调用点上对原始对象作出修改(参见下面的示例)，按值传递无法做到。
 
 ##### Note
 
-Unfortunately, there is no simple way to capture by reference to `const` to get the efficiency for a local call but also prevent side effects.
+不幸的是，没有一种简单的方式通过捕获`const`引用来既获得效率又阻止副作用(译注：副作用即是对变量做出变量)。
 
-##### Example
+##### 示例
 
-Here, a large object (a network message) is passed to an iterative algorithm, and is it not efficient or correct to copy the message (which may not be copyable):
+这里，一个大对象(网络消息)传递给了迭代算法，对消息的复制即不高效也不正确(可能不可复制)。
 
     std::for_each(begin(sockets), end(sockets), [&message](auto& socket)
     {
         socket.send(message);
     });
 
-##### Example
+##### 示例
 
-This is a simple three-stage parallel pipeline. Each `stage` object encapsulates a worker thread and a queue, has a `process` function to enqueue work, and in its destructor automatically blocks waiting for the queue to empty before ending the thread.
+这是一个简单的三阶段(stage)并行流水线，每个`stage`对象都封装了一个工作线程和一个队列，有一个`process`函数作用于进入队列的任务，并且它的析构函数会在线程结束前自动地阻塞等待队列清空。
 
     void send_packets(buffers& bufs)
     {
@@ -3609,48 +3591,47 @@ This is a simple three-stage parallel pipeline. Each `stage` object encapsulates
         stage compressor([&](buffer& b){ compress(b); encryptor.process(b); });
         stage decorator([&](buffer& b){ decorate(b); compressor.process(b); });
         for (auto& b : bufs) { decorator.process(b); }
-    }  // automatically blocks waiting for pipeline to finish
+    }  // 自动地阻塞，等待流水线结束
 
 ##### Enforcement
 
-Flag a lambda that captures by reference, but is used other than locally within the function scope or passed to a function by reference. (Note: This rule is an approximation, but does flag passing by pointer as those are more likely to be stored by the callee, writing to a heap location accessed via a parameter, returning the lambda, etc. The Lifetime rules will also provide general rules that flag escaping pointers and references including via lambdas.)
+标出通过引用捕获lambda，但不是在函数作用域中本地使用，也不是通过引用传递给函数。(注意：这条规则是一个近似值，但是要标出通过指针传递的lambda，这些指针更有可能由被调用者存储、通过访问参数写入堆内存、返回lambda，等等。`生命周期规则`还将提供标记转义指针和引用(包括通过lambda)的通用规则。)
 
-### <a name="Rf-value-capture"></a>F.53: Avoid capturing by reference in lambdas that will be used nonlocally, including returned, stored on the heap, or passed to another thread
 
-##### Reason
+### <a name="Rf-value-capture"></a>F.53: 避免lambda捕获引用，如果不是本地使用，包括返回、堆上存储、传递给其它线程
 
-Pointers and references to locals shouldn't outlive their scope. Lambdas that capture by reference are just another place to store a reference to a local object, and shouldn't do so if they (or a copy) outlive the scope.
+##### 原因
 
-##### Example, bad
+局部变量的指针和引用不能超过他们的作用域。lambda捕获的引用只是存储本地变量引用的另一个地方，如果超过了它们(或引用的副本)的作用域，就不应该这样做。
+
+##### 糟糕的例子
 
     int local = 42;
 
-    // Want a reference to local.
-    // Note, that after program exits this scope,
-    // local no longer exists, therefore
-    // process() call will have undefined behavior!
+    // 想要一个local的引用，注意，当程序离开这个作用域后，
+    // 局部变量不再存在，因此，process()的调用会有未定义的行为
     thread_pool.queue_work([&]{ process(local); });
 
-##### Example, good
+##### 糟糕的例子
 
     int local = 42;
-    // Want a copy of local.
-    // Since a copy of local is made, it will
-    // always be available for the call.
+    
+    // 想要local的一个副本，因为有了local的副本，该副本都调用都是可用的
     thread_pool.queue_work([=]{ process(local); });
 
 ##### Enforcement
 
-* (Simple) Warn when capture-list contains a reference to a locally declared variable
-* (Complex) Flag when capture-list contains a reference to a locally declared variable and the lambda is passed to a non-`const` and non-local context
 
-### <a name="Rf-this-capture"></a>F.54: If you capture `this`, capture all variables explicitly (no default capture)
+* (简单) 给出警告，如果捕获列表(capture-list)包含对本地声明的变量的引用。
+* (复杂) 给出标记，当捕获列表包含对本地声明变量的引用，并且lambda被传递到非`const`和非本地上下文时。
 
-##### Reason
+### <a name="Rf-this-capture"></a>F.54: 如果你捕获了`this`，你就显式地捕获了所有变量(没有默认的捕获)
 
-It's confusing. Writing `[=]` in a member function appears to capture by value, but actually captures data members by reference because it actually captures the invisible `this` pointer by value. If you meant to do that, write `this` explicitly.
+##### 原因
 
-##### Example
+这是令人困惑的，在成员函数中使用`[=]`似乎是按值捕获的，但实际上是按引用捕获了成员对象，因为它实际上是按值捕获不可见的`this`指针，如果你打算这样做，把`this`写清楚。
+
+##### 示例
 
     class My_class {
         int x = 0;
@@ -3660,9 +3641,9 @@ It's confusing. Writing `[=]` in a member function appears to capture by value, 
             int i = 0;
             // ...
 
-            auto lambda = [=]{ use(i, x); };   // BAD: "looks like" copy/value capture
-            // [&] has identical semantics and copies the this pointer under the current rules
-            // [=,this] and [&,this] are not much better, and confusing
+            auto lambda = [=]{ use(i, x); };   // BAD: “看起来像”按值捕获的
+            // 在本规则下，[&]具有和拷贝this指针相同的语义，
+            // [=,this] 和 [&,this]没有更好，也是令人困惑的
 
             x = 42;
             lambda(); // calls use(0, 42);
@@ -3671,7 +3652,7 @@ It's confusing. Writing `[=]` in a member function appears to capture by value, 
 
             // ...
 
-            auto lambda2 = [i, this]{ use(i, x); }; // ok, most explicit and least confusing
+            auto lambda2 = [i, this]{ use(i, x); }; // ok, 最明确，最不容易混淆
 
             // ...
         }
@@ -3679,55 +3660,54 @@ It's confusing. Writing `[=]` in a member function appears to capture by value, 
 
 ##### Note
 
-This is under active discussion in standardization, and may be addressed in a future version of the standard by adding a new capture mode or possibly adjusting the meaning of `[=]`. For now, just be explicit.
+标准正对此进行了积极的讨论，在未来标准的版本中，可以通过添加新的捕获模式或调整`[=]`的含义来解决这个问题。现在，只需要明确。
 
 ##### Enforcement
 
-* Flag any lambda capture-list that specifies a default capture and also captures `this` (whether explicitly or via default capture)
+* 标出任何指定默认捕获并捕获`this`(无论是通过显式还是默认捕获)的lambda捕获列表
 
-### <a name="F-varargs"></a>F.55: Don't use `va_arg` arguments
+### <a name="F-varargs"></a>F.55: 不要使用`va_arg`参数 
 
-##### Reason
+##### 原因
 
-Reading from a `va_arg` assumes that the correct type was actually passed.
-Passing to varargs assumes the correct type will be read.
-This is fragile because it cannot generally be enforced to be safe in the language and so relies on programmer discipline to get it right.
+从`va_arg`读取数据时，会假定向函数传递了正确的类型；传递给`va_arg`时，会假定函数将读取正确的类型。
+这是脆弱的，因为它通常不能在语言中强制执行以确保安全，因此会依赖于程序员规程来确保它的正确性。
 
-##### Example
+##### 示例
 
     int sum(...) {
         // ...
         while (/*...*/)
-            result += va_arg(list, int); // BAD, assumes it will be passed ints
+            result += va_arg(list, int); // BAD, 假定它会传递整数列表
         // ...
     }
 
     sum(3, 2); // ok
-    sum(3.14159, 2.71828); // BAD, undefined
+    sum(3.14159, 2.71828); // BAD, 未定义的
 
     template<class ...Args>
-    auto sum(Args... args) { // GOOD, and much more flexible
-        return (... + args); // note: C++17 "fold expression"
+    auto sum(Args... args) { // GOOD, 更灵活
+        return (... + args); // note: C++17的折叠表达式(fold expression)
     }
 
     sum(3, 2); // ok: 5
     sum(3.14159, 2.71828); // ok: ~5.85987
 
-##### Alternatives
+##### 备选
 
-* overloading
-* variadic templates
-* `variant` arguments
-* `initializer_list` (homogeneous)
+* 重载
+* 可变参数模板
+* `variant`参数
+* `initializer_list`(齐次的)
 
 ##### Note
 
-Declaring a `...` parameter is sometimes useful for techniques that don't involve actual argument passing, notably to declare "take-anything" functions so as to disable "everything else" in an overload set or express a catchall case in a template metaprogram.
+声明一个`…`参数有时对不涉及实际参数传递的技术非常有用，特别是声明“获取任意类型参数”的函数，以便在重载的函数集中禁用“其它所有类型”的参数（译注：一般在重载的函数中处理无法使用`...`进行通用处理的类型），或者在模板元程序中表示包罗万象情况。
 
 ##### Enforcement
 
-* Issue a diagnostic for using `va_list`, `va_start`, or `va_arg`.
-* Issue a diagnostic for passing an argument to a vararg parameter of a function that does not offer an overload for a more specific type in the position of the vararg. To fix: Use a different function, or `[[suppress(types)]]`.
+* 触发一个诊断(消息/提示)，如果使用了`va_list`、`va_start`、`va_arg`。
+* 触发一个诊断(消息/提示)，如果将参数传递给了函数的`vararg`参数，但并没有在相应的地方提供该函数更具体类型的函数重载。修复方法：使用不同的函数，或者`[[suppress(types)]]`。
 
 # <a name="S-class"></a>C: Classes and class hierarchies
 
