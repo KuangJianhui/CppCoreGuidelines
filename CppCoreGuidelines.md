@@ -4076,28 +4076,24 @@ For example:
 
 ## <a name="SS-concrete"></a>C.concrete: 具体类型
 
-One ideal for a class is to be a regular type.
-That means roughly "behaves like an `int`." A concrete type is the simplest kind of class.
-A value of regular type can be copied and the result of a copy is an independent object with the same value as the original.
-If a concrete type has both `=` and `==`, `a = b` should result in `a == b` being `true`.
-Concrete classes without assignment and equality can be defined, but they are (and should be) rare.
-The C++ built-in types are regular, and so are standard-library classes, such as `string`, `vector`, and `map`.
-Concrete types are also often referred to as value types to distinguish them from types used as part of a hierarchy.
+一个理想的类应该常规(general)类型，这差不多是说其行为像一个`int`，具体类型是最简单的类。
+常规类型的值是可以被复制的，并且复制的结果是与原始值相同的独立对象，如果一个具体类型同时具有`=`和`==`，那么`a = b`的结果应该会让`a == b`为`true`。
+可以定义没有`=`和`==`的具体类，但是它们是(而且应该是)很少见的。
+C++内置类型是常规的，标准库类也是常规的，比如`string`、`vector`和`map`。
+具体类型通常也被称为值类型，以区别于用作层次结构一部分的类型。
 
-Concrete type rule summary:
+具体类型规则概述：
 
-* [C.10: Prefer concrete types over class hierarchies](#Rc-concrete)
-* [C.11: Make concrete types regular](#Rc-regular)
+* [C.10: 相较于类层次结构，优先使用具体类型](#Rc-concrete)
+* [C.11: 让具体类型常规化](#Rc-regular)
 
-### <a name="Rc-concrete"></a>C.10: Prefer concrete types over class hierarchies
+### <a name="Rc-concrete"></a>C.10: 相较于类层次结构，优先使用具体类型
 
 ##### Reason
 
-A concrete type is fundamentally simpler than a hierarchy:
-easier to design, easier to implement, easier to use, easier to reason about, smaller, and faster.
-You need a reason (use cases) for using a hierarchy.
+从根本上讲，具体类型给层次结构更简单、更容易设计、更容易实现、更容易使用、更容易推理、更小、更快。如果要用层次结构，你需要一个使用它的理由(用例)。
 
-##### Example
+##### 示例
 
     class Point1 {
         int x, y;
@@ -4121,30 +4117,28 @@ You need a reason (use cases) for using a hierarchy.
         // ...
     }
 
-If a class can be part of a hierarchy, we (in real code if not necessarily in small examples) must manipulate its objects through pointers or references.
-That implies more memory overhead, more allocations and deallocations, and more run-time overhead to perform the resulting indirections.
+如果一个类可以是层次结构的一部分，那么我们(在实际代码中，而不是在小的示例中)必须通过指针或引用操作它的对象。
+这意味着需要更多的内存开销、更多的分配和释放，以及更多的运行时开销来执行产生的间接操作。
 
 ##### Note
 
-Concrete types can be stack-allocated and be members of other classes.
+具体类型可以是堆栈分配的，也可以是其他类的成员。
 
 ##### Note
 
-The use of indirection is fundamental for run-time polymorphic interfaces.
-The allocation/deallocation overhead is not (that's just the most common case).
-We can use a base class as the interface of a scoped object of a derived class.
-This is done where dynamic allocation is prohibited (e.g. hard-real-time) and to provide a stable interface to some kinds of plug-ins.
-
+间接使用主要是为了接口运行时多态，而不是分配和释放的开销(这只是最常见的情况)
+我们可以使用基类作为作用域内派生类对象的接口。
+这是在禁止动态分配的情况下完成的(例如，硬实时)，并为某些插件提供稳定的接口。
 
 ##### Enforcement
 
 ???
 
-### <a name="Rc-regular"></a>C.11: Make concrete types regular
+### <a name="Rc-regular"></a>C.11: 让具体类型常规化
 
 ##### Reason
 
-Regular types are easier to understand and reason about than types that are not regular (irregularities requires extra effort to understand and use).
+常规类型比非常规类型更容易理解和推理，非常规类型需要额外的努力来理解和使用。
 
 ##### Example
 
@@ -4164,50 +4158,48 @@ Regular types are easier to understand and reason about than types that are not 
     b2.name = "the other bundle";
     if (b1 == b2) error("No!");
 
-In particular, if a concrete type has an assignment also give it an equals operator so that `a = b` implies `a == b`.
+特别地，如果一个具体类型能被赋值，也要给它一个等号运算符，这样`a = b`意味着`a == b`。
 
 ##### Note
 
-Handles for resources that cannot be cloned, e.g., a `scoped_lock` for a `mutex`, resemble concrete types in that they most often are stack-allocated.
-However, objects of such types typically cannot be copied (instead, they can usually be moved),
-so they can't be `regular`; instead, they tend to be `semiregular`.
-Often, such types are referred to as "move-only types".
+资源句柄是不能被复制的，例如`mutex`的`scoped_lock`，与具体类型类似，它们通常是基于堆分配的。
+然而，由于这些类型通常是不能被复制的(相反，它们可以被move)，因此它们不是常规类型，不过，它们往往是"半常规的"。
+通常，这些类型被当作是"仅可移动的类型"。
 
 ##### Enforcement
 
 ???
 
-## <a name="S-ctor"></a>C.ctor: Constructors, assignments, and destructors
+## <a name="S-ctor"></a>C.ctor: 构造函数、赋值和析构函数
 
-These functions control the lifecycle of objects: creation, copy, move, and destruction.
-Define constructors to guarantee and simplify initialization of classes.
+这些函数控制了对象的生命周期：创建、复制、移动和销毁。
+通过定义构造函数来保证和简化类的初始化。
 
-These are *default operations*:
+这些是*默认操作*：
 
-* a default constructor: `X()`
-* a copy constructor: `X(const X&)`
-* a copy assignment: `operator=(const X&)`
-* a move constructor: `X(X&&)`
-* a move assignment: `operator=(X&&)`
-* a destructor: `~X()`
+* 默认构造函数: `X()`
+* 拷贝构造函数: `X(const X&)`
+* 拷贝赋值: `operator=(const X&)`
+* 移动构造函数: `X(X&&)`
+* 移动赋值: `operator=(X&&)`
+* 析构函数: `~X()`
 
-By default, the compiler defines each of these operations if it is used, but the default can be suppressed.
+默认情况下，如果使用这些操作，编译器将定义它们中的每一个，但是默认操作可以被取消。
+默认操作是一组相关的操作，它们共同实现对象的生命周期语义。
+默认情况下，C++将类视为值类型，但并非所有类型都是值类型。
 
-The default operations are a set of related operations that together implement the lifecycle semantics of an object.
-By default, C++ treats classes as value-like types, but not all types are value-like.
+默认操作规则：
 
-Set of default operations rules:
-
-* [C.20: If you can avoid defining any default operations, do](#Rc-zero)
-* [C.21: If you define or `=delete` any default operation, define or `=delete` them all](#Rc-five)
-* [C.22: Make default operations consistent](#Rc-matched)
+* [C.20: 尽量避免定义任何默认操作](#Rc-zero)
+* [C.21: 如果你定义或`=delete`了任何默认操作，把所有默认操作都定义或`=delete`掉](#Rc-five)
+* [C.22: 让默认操作保持一致](#Rc-matched)
 
 Destructor rules:
 
-* [C.30: Define a destructor if a class needs an explicit action at object destruction](#Rc-dtor)
-* [C.31: All resources acquired by a class must be released by the class's destructor](#Rc-dtor-release)
-* [C.32: If a class has a raw pointer (`T*`) or reference (`T&`), consider whether it might be owning](#Rc-dtor-ptr)
-* [C.33: If a class has an owning pointer member, define or `=delete` a destructor](#Rc-dtor-ptr2)
+* [C.30: 定义析构函数，如果类需要显示地销毁对象](#Rc-dtor)
+* [C.31: 类所获取的所有资源，都需由析构函数来释放](#Rc-dtor-release)
+* [C.32: 如果类具有原始指针(`T*`)或引用(`T&`)，考虑它是否有所有权 ](#Rc-dtor-ptr)
+* [C.33: 如果类有一个具有所有权的指针成员，定义或`=delete`一个析构函数](#Rc-dtor-ptr2)
 * [C.35: A base class destructor should be either public and virtual, or protected and nonvirtual](#Rc-dtor-virtual)
 * [C.36: A destructor may not fail](#Rc-dtor-fail)
 * [C.37: Make destructors `noexcept`](#Rc-dtor-noexcept)
@@ -4256,65 +4248,57 @@ Other default operations rules:
 By default, the language supplies the default operations with their default semantics.
 However, a programmer can disable or replace these defaults.
 
-### <a name="Rc-zero"></a>C.20: If you can avoid defining default operations, do
+### <a name="Rc-zero"></a>C.20: 尽量避免定义任何默认操作
 
 ##### Reason
 
-It's the simplest and gives the cleanest semantics.
+最简单，且提供了最干净的语义。
 
 ##### Example
 
     struct Named_map {
     public:
-        // ... no default operations declared ...
+        // ... 没有默认操作的声明 ...
     private:
         string name;
         map<int, int> rep;
     };
 
-    Named_map nm;        // default construct
-    Named_map nm2 {nm};  // copy construct
+    Named_map nm;        // 默认构造
+    Named_map nm2 {nm};  // 拷贝构造
 
-Since `std::map` and `string` have all the special functions, no further work is needed.
+既然`std::map`和`string`已经有了所有的特殊函数，因此没有更多工作要做。
 
 ##### Note
 
-This is known as "the rule of zero".
+这就是所谓的"零原则"("the rule of zero")。(译注：参见[Rule of Zero](https://isocpp.org/blog/2012/11/rule-of-zero)）
 
 ##### Enforcement
 
-(Not enforceable) While not enforceable, a good static analyzer can detect patterns that indicate a possible improvement to meet this rule.
-For example, a class with a (pointer, size) pair of member and a destructor that `delete`s the pointer could probably be converted to a `vector`.
+(不可强制执行) 虽然不可强制执行，但是一个好的静态分析器可以检测出可能满足这个规则的改进模式。
+例如，一个类有一对成员{指针，大小}和一个析构函数，析构函数中对指针的`delete`操作可能可以转换成`vector`(译注：这里说也就是所谓的`RAII`，`vector`可以自己管理内存)。
 
-### <a name="Rc-five"></a>C.21: If you define or `=delete` any default operation, define or `=delete` them all
+### <a name="Rc-five"></a>C.21: 如果你定义或`=delete`了任何默认操作，把所有默认操作都定义或`=delete`掉
 
 ##### Reason
 
-The *special member functions* are the default constructor, copy constructor,
-copy assignment operator, move constructor, move assignment operator, and
-destructor.
+*特殊成员函数*指默认构造函数、拷贝构造函数、拷贝赋值运算符、移动构造函数、移动赋值运算符、以及析构函数。
 
-The semantics of the special functions are closely related, so if one needs to be declared, the odds are that others need consideration too.
+特殊函数的语义密切相关，因此如果需要声明一个函数，那么其他函数也需要考虑。
 
-Declaring any special member function except a default constructor,
-even as `=default` or `=delete`, will suppress the implicit declaration
-of a move constructor and move assignment operator.
-Declaring a move constructor or move assignment operator, even as
-`=default` or `=delete`, will cause an implicitly generated copy constructor
-or implicitly generated copy assignment operator to be defined as deleted.
-So as soon as any of the special functions is declared, the others should
-all be declared to avoid unwanted effects like turning all potential moves
-into more expensive copies, or making a class move-only.
+声明除默认构造函数外的任何特殊成员函数，即使是`=default`或`=delete`，也会禁止隐式声明移动构造函数和移动赋值操作符。
+声明一个移动构造函数或移动赋值操作符，甚至`=default`或`=delete`，也将导致隐式生成的拷贝构造函数和拷贝赋值运算符被定义为已删除。
+因此，一旦任何一个特殊函数被声明，其他函数就应该也都被声明，以避免不必要的影响，如将潜在的移动操作变成更昂贵的拷贝，或可仅移动的类型。
 
-##### Example, bad
+##### 糟糕的例子
 
-    struct M2 {   // bad: incomplete set of default operations
+    struct M2 {   // 糟糕：不完整的默认操作
     public:
         // ...
-        // ... no copy or move operations ...
+        // ... 没有拷贝或移动操作 ...
         ~M2() { delete[] rep; }
     private:
-        pair<int, int>* rep;  // zero-terminated set of pairs
+        pair<int, int>* rep;  // 以0结束的pair集合
     };
 
     void use()
@@ -4322,27 +4306,25 @@ into more expensive copies, or making a class move-only.
         M2 x;
         M2 y;
         // ...
-        x = y;   // the default assignment
+        x = y;   // 默认赋值操作
         // ...
     }
 
-Given that "special attention" was needed for the destructor (here, to deallocate), the likelihood that copy and move assignment (both will implicitly destroy an object) are correct is low (here, we would get double deletion).
+格外注意析构函数(这里用来释放)，拷贝赋值和移动赋值(两者都隐式地销毁对象)正确执行的可能性很低(这里，我们会得到两次delete)。
+(译注：这里使用了浅复制(shadow copy)，因此x和y销毁时都会都释放rep指向的同一块内存)
 
 ##### Note
 
-This is known as "the rule of five" or "the rule of six", depending on whether you count the default constructor.
+所谓的"the rule of five"或"the rule of six"，取决于你是否算上默认构造函数。
+(译注：`默认构造函数、`拷贝构造函数、拷贝赋值运算符、移动构造函数、移动赋值运算符、以及析构函数)
 
 ##### Note
 
-If you want a default implementation of a default operation (while defining another), write `=default` to show you're doing so intentionally for that function.
-If you don't want a default operation, suppress it with `=delete`.
+在定义其它操作时，你希望默认操作能有默认实现，使用`=default`，以显示你确实想这样做。如果你不想要一个默认操作，使用`=delete`来抑制(编译器生成)。
 
-##### Example, good
+##### 糟糕的例子
 
-When a destructor needs to be declared just to make it `virtual`, it can be
-defined as defaulted. To avoid suppressing the implicit move operations
-they must also be declared, and then to avoid the class becoming move-only
-(and not copyable) the copy operations must be declared:
+如果析构函数只需要被声明成`virtual`，也可以定义成默认的。为了避免抑制隐式的移动操作，它们必须被声明。然后，为了避免类变成"仅可移动"的(不能被复制)，拷贝操作也必须被声明。
 
     class AbstractBase {
     public:
@@ -4353,8 +4335,7 @@ they must also be declared, and then to avoid the class becoming move-only
       AbstractBase& operator=(AbstractBase&&) = default;
     };
 
-Alternatively to prevent slicing as per [C.67](#Rc-copy-virtual),
-the copy and move operations can all be deleted:
+或者按照[C.67](#Rc-copy-virtual)防止切片，可以删除拷贝和移动操作:
 
     class ClonableBase {
     public:
@@ -4366,200 +4347,191 @@ the copy and move operations can all be deleted:
       ClonableBase& operator=(ClonableBase&&) = delete;
     };
 
-Defining only the move operations or only the copy operations would have the
-same effect here, but stating the intent explicitly for each special member
-makes it more obvious to the reader.
+在这里，仅定义移动操作或仅定义拷贝操作将具有相同的效果，但是，显式地说明每个特殊成员函数的意图，会让读者更容易理解。
 
 ##### Note
 
-Compilers enforce much of this rule and ideally warn about any violation.
+编译器强制执行这条规则的大部分内容，理想情况下，编译器会警告任何违反这些规则的情况。
 
 ##### Note
 
-Relying on an implicitly generated copy operation in a class with a destructor is deprecated.
+具有析构函数的类不再隐式生成拷贝操作。
 
 ##### Note
 
-Writing the six special member functions can be error prone.
-Note their argument types:
+写六个特殊成员函数可能是易于出错的，注意他们的参数类型：
 
     class X {
     public:
         // ...
-        virtual ~X() = default;            // destructor (virtual if X is meant to be a base class)
-        X(const X&) = default;             // copy constructor
-        X& operator=(const X&) = default;  // copy assignment
-        X(X&&) = default;                  // move constructor
-        X& operator=(X&&) = default;       // move assignment
+        virtual ~X() = default;            // 析构函数(virtual，如果X要作为基类)
+        X(const X&) = default;             // 拷贝构造函数
+        X& operator=(const X&) = default;  // 拷贝赋值
+        X(X&&) = default;                  // 移动构造函数
+        X& operator=(X&&) = default;       // 移动赋值
     };
 
-A minor mistake (such as a misspelling, leaving out a `const`, using `&` instead of `&&`, or leaving out a special function) can lead to errors or warnings.
-To avoid the tedium and the possibility of errors, try to follow the [rule of zero](#Rc-zero).
+一个小失误(例如，拼写错误、遗漏`const`、使用`&`而非`&&`、或者遗漏了一个特殊函数)可能导致错误或警告。为了避免单调和错误的可能性，试着遵循[rule of zero](#Rc-zero)。
 
 ##### Enforcement
 
-(Simple) A class should have a declaration (even a `=delete` one) for either all or none of the special functions.
+(简单) 一个类应当，要么声明(甚至使用`=delete`)所有的特殊函数，要么一个都不声明。
 
-### <a name="Rc-matched"></a>C.22: Make default operations consistent
+### <a name="Rc-matched"></a>C.22: 让默认操作保持一致
 
 ##### Reason
 
-The default operations are conceptually a matched set. Their semantics are interrelated.
-Users will be surprised if copy/move construction and copy/move assignment do logically different things. Users will be surprised if constructors and destructors do not provide a consistent view of resource management. Users will be surprised if copy and move don't reflect the way constructors and destructors work.
+默认操作是一组在概念上相匹配的集合，它们的语义是相互关联的。
+如果拷贝/移动构造函数和复制/移动赋值函数在做逻辑上不同的事情，用户会感到惊讶；如果构造函数和析构函数不能提供资源管理的一致视图，用户会感到惊讶；如果拷贝和移动没有反映构造函数和析构函数的工作方式，用户会感到惊讶。
 
 ##### Example, bad
 
-    class Silly {   // BAD: Inconsistent copy operations
+    class Silly {   // 糟糕：不一致的拷贝操作
         class Impl {
             // ...
         };
         shared_ptr<Impl> p;
     public:
-        Silly(const Silly& a) : p{a.p} { *p = *a.p; }   // deep copy
-        Silly& operator=(const Silly& a) { p = a.p; }   // shallow copy
+        Silly(const Silly& a) : p{a.p} { *p = *a.p; }   // 深拷贝(deep copy)
+        Silly& operator=(const Silly& a) { p = a.p; }   // 浅拷贝(shallow copy)
         // ...
     };
 
-These operations disagree about copy semantics. This will lead to confusion and bugs.
+这些操作在拷贝语义上存在分歧，这将导致混乱和错误。
 
 ##### Enforcement
 
-* (Complex) A copy/move constructor and the corresponding copy/move assignment operator should write to the same member variables at the same level of dereference.
-* (Complex) Any member variables written in a copy/move constructor should also be initialized by all other constructors.
-* (Complex) If a copy/move constructor performs a deep copy of a member variable, then the destructor should modify the member variable.
-* (Complex) If a destructor is modifying a member variable, that member variable should be written in any copy/move constructors or assignment operators.
+* (复杂)拷贝/移动构造函数及其相应的操作符应该在相同的解引用级别写入相同的成员变量。
+* (复杂)拷贝/移动构造函数中写入的任何成员变量也应该由所有其他构造函数初始化。
+* (复杂)如果拷贝/移动构造函数执行成员变量的深拷贝(deep copy)，那么析构函数也应该修(清理)改该成员变量。
+* (复杂)如果析构函数修改(清理)成员变量，那么该成员变量应该在所有的拷贝/移动构造函数或赋值操作符中被写入。
 
-## <a name="SS-dtor"></a>C.dtor: Destructors
+## <a name="SS-dtor"></a>C.dtor: 析构函数
 
-"Does this class need a destructor?" is a surprisingly powerful design question.
-For most classes the answer is "no" either because the class holds no resources or because destruction is handled by [the rule of zero](#Rc-zero);
-that is, its members can take care of themselves as concerns destruction.
-If the answer is "yes", much of the design of the class follows (see [the rule of five](#Rc-five)).
+该类确实需要析构函数吗？是一个异常强大的设计问题。
+对于大多数类而言，答案是否定的，要么是因为该类没有持有资源，要么是因为销毁是由[the rule of zero](#Rc-zero)处理的。
+那也就是说，它们的成员变量可以处理他们自己的销毁。
+如果答案是肯定的，即确实需要一个析构函数，该类大部的设计都要遵循[the rule of five](#Rc-five)。
 
-### <a name="Rc-dtor"></a>C.30: Define a destructor if a class needs an explicit action at object destruction
+### <a name="Rc-dtor"></a>C.30: 定义析构函数，如果类需要显示地销毁对象
 
 ##### Reason
 
-A destructor is implicitly invoked at the end of an object's lifetime.
-If the default destructor is sufficient, use it.
-Only define a non-default destructor if a class needs to execute code that is not already part of its members' destructors.
+析构函数会在对象生命周期结束后被隐式地调用，如果默认析构函数已经足够，就使用它。
+只有在类需要执行不属于其成员对象析构函数一部分的代码时，才定义非默认的析构函数。
 
 ##### Example
 
     template<typename A>
-    struct final_action {   // slightly simplified
+    struct final_action {   // 稍微被简化了
         A act;
         final_action(A a) :act{a} {}
         ~final_action() { act(); }
     };
 
     template<typename A>
-    final_action<A> finally(A act)   // deduce action type
+    final_action<A> finally(A act)   // 推断action的类型
     {
         return final_action<A>{act};
     }
 
     void test()
     {
-        auto act = finally([]{ cout << "Exit test\n"; });  // establish exit action
+        auto act = finally([]{ cout << "Exit test\n"; });  // 建立退出action
         // ...
-        if (something) return;   // act done here
+        if (something) return;   // 这里，act已结束
         // ...
-    } // act done here
+    } // 这里，act已结束
 
-The whole purpose of `final_action` is to get a piece of code (usually a lambda) executed upon destruction.
+`final_action`的目的是让一段代码(通常是lambda)能在销毁之前执行。
 
 ##### Note
 
-There are two general categories of classes that need a user-defined destructor:
+有两类类需要用户定义的析构函数：
 
-* A class with a resource that is not already represented as a class with a destructor, e.g., a `vector` or a transaction class.
-* A class that exists primarily to execute an action upon destruction, such as a tracer or `final_action`.
+* 具有资源的类，而资源本身不是具有析构函数的类，例如，`vector`或事务类。
+* 主要用于在对象销毁时执行操作的类，如跟踪程序或`final_action`。
 
-##### Example, bad
+##### 糟糕的例子
 
-    class Foo {   // bad; use the default destructor
+    class Foo {   // 糟糕，使用默认的析构函数即可
     public:
         // ...
-        ~Foo() { s = ""; i = 0; vi.clear(); }  // clean up
+        ~Foo() { s = ""; i = 0; vi.clear(); }  // 清理操作
     private:
         string s;
         int i;
         vector<int> vi;
     };
 
-The default destructor does it better, more efficiently, and can't get it wrong.
+默认析构函数可以做的更好，更有效率，并且也不会出错。
 
 ##### Note
 
-If the default destructor is needed, but its generation has been suppressed (e.g., by defining a move constructor), use `=default`.
+如果需要默认构造函数，但它的生成被抑制了(如，通过定义移动构造函数)，使用`=default`。
 
 ##### Enforcement
 
-Look for likely "implicit resources", such as pointers and references. Look for classes with destructors even though all their data members have destructors.
+寻找看起来"隐式的资源"，例如指针和引用。寻找所有成员对象都有析构函数，但又定义了析构函数的类。
 
-### <a name="Rc-dtor-release"></a>C.31: All resources acquired by a class must be released by the class's destructor
+### <a name="Rc-dtor-release"></a>C.31: 类所获取的所有资源，都需由析构函数来释放
 
 ##### Reason
 
-Prevention of resource leaks, especially in error cases.
+防止资源泄漏，特别是在错误的情况下。
 
 ##### Note
 
-For resources represented as classes with a complete set of default operations, this happens automatically.
+对于由具有完整默认操作的类表示的资源，这将自动发生。（译注：这里的类指的是具有五个默认特殊函数的类）
 
 ##### Example
 
     class X {
-        ifstream f;   // may own a file
-        // ... no default operations defined or =deleted ...
+        ifstream f;   // 可能持有了一个文件
+        // ... 没有定义默认操作，或使用了`=deleted` ... 
     };
 
-`X`'s `ifstream` implicitly closes any file it may have open upon destruction of its `X`.
+在`X`销毁时，`ifstream`会隐式地关闭它所打开的所有文件。
 
-##### Example, bad
+##### 糟糕的例子
 
     class X2 {     // bad
-        FILE* f;   // may own a file
-        // ... no default operations defined or =deleted ...
+        FILE* f;   // 可能持有了一个文件
+        // ... 没有定义默认操作，或使用了`=deleted`...
     };
 
-`X2` may leak a file handle.
+`X2`可能漏泄了一个文件句柄。
 
 ##### Note
 
-What about a sockets that won't close? A destructor, close, or cleanup operation [should never fail](#Rc-dtor-fail).
-If it does nevertheless, we have a problem that has no really good solution.
-For starters, the writer of a destructor does not know why the destructor is called and cannot "refuse to act" by throwing an exception.
-See [discussion](#Sd-never-fail).
-To make the problem worse, many "close/release" operations are not retryable.
-Many have tried to solve this problem, but no general solution is known.
-If at all possible, consider failure to close/cleanup a fundamental design error and terminate.
+一个不会关闭的socket会怎么样？析构函数、close、或清理操作[应当不会失败](#Rc-dtor-fail)，
+然而，如果这确实发生，我们就有了一个没有真正好的解决方案的问题。
+对亲手而言，析构函数的编写者不知道为什么要调用析构函数，也不会通过抛出异常来“拒绝执行”，参见[讨论](#Sd-never-fail)。
+让这个问题更加糟糕很多的“关闭/释放”操作不会重试，
+许多人试图解决这个问题，但没有一个通用的解决方案，
+如果可能的话，考虑关闭/清除失败是一个基本的设计错误并退出程序。
 
 ##### Note
 
-A class can hold pointers and references to objects that it does not own.
-Obviously, such objects should not be `delete`d by the class's destructor.
-For example:
+一个类可以持有不属于它的对象的指针和引用，显然，这些对象不应该由该类的析构函数进行释放，例如：
 
     Preprocessor pp { /* ... */ };
     Parser p { pp, /* ... */ };
     Type_checker tc { p, /* ... */ };
 
-Here `p` refers to `pp` but does not own it.
+这里，`p`引用了`pp`，但`pp`并不属于它。
 
 ##### Enforcement
 
-* (Simple) If a class has pointer or reference member variables that are owners
-  (e.g., deemed owners by using `gsl::owner`), then they should be referenced in its destructor.
-* (Hard) Determine if pointer or reference member variables are owners when there is no explicit statement of ownership
-  (e.g., look into the constructors).
+* (简单) 如果一个类有其它所有者(如使用`gsl::owner`表示的所有者)的指针或引用成员变量，那么在它的析构函数中也应该是引用着的。
+* (困难) 当没有显式的所有权声明时，确定指针或引用成员变量是否是所有者(例如，查看构造函数)。
 
-### <a name="Rc-dtor-ptr"></a>C.32: If a class has a raw pointer (`T*`) or reference (`T&`), consider whether it might be owning
+<!-- If a class has a raw pointer (`T*`) or reference (`T&`), consider whether it might be owning -->
+### <a name="Rc-dtor-ptr"></a>C.32: 如果类具有原始指针(`T*`)或引用(`T&`)，考虑它是否有所有权 
 
 ##### Reason
 
-There is a lot of code that is non-specific about ownership.
+有非常多的代码与所有权无关。
 
 ##### Example
 
@@ -4567,18 +4539,17 @@ There is a lot of code that is non-specific about ownership.
 
 ##### Note
 
-If the `T*` or `T&` is owning, mark it `owning`. If the `T*` is not owning, consider marking it `ptr`.
-This will aid documentation and analysis.
+如果`T*`或`T&`有所有权，标记为`owning`，否则，考虑将其标记为`ptr`。这是为了批注(documentation)及分析。
 
 ##### Enforcement
 
-Look at the initialization of raw member pointers and member references and see if an allocation is used.
+查看原始成员指针(raw member pointer)和成员引用的初始化，并查看是否使用了分配(allocation)。
 
-### <a name="Rc-dtor-ptr2"></a>C.33: If a class has an owning pointer member, define a destructor
+### <a name="Rc-dtor-ptr2"></a>C.33: 如果类有一个具有所有权的指针成员，定义或`=delete`一个析构函数
 
 ##### Reason
 
-An owned object must be `deleted` upon destruction of the object that owns it.
+被持有的对象必须在被(持有其的对象)销毁时被`删除`。
 
 ##### Example
 
