@@ -4200,7 +4200,7 @@ Destructor rules:
 * [C.31: 类所获取的所有资源，都需由析构函数来释放](#Rc-dtor-release)
 * [C.32: 如果类具有原始指针(`T*`)或引用(`T&`)，考虑它是否有所有权 ](#Rc-dtor-ptr)
 * [C.33: 如果类有一个具有所有权的指针成员，定义或`=delete`一个析构函数](#Rc-dtor-ptr2)
-* [C.35: A base class destructor should be either public and virtual, or protected and nonvirtual](#Rc-dtor-virtual)
+* [C.35: 基类的析构函数应当要么是public和virtual的，要么是protect和非virtual的](#Rc-dtor-virtual)
 * [C.36: A destructor may not fail](#Rc-dtor-fail)
 * [C.37: Make destructors `noexcept`](#Rc-dtor-noexcept)
 
@@ -4553,84 +4553,84 @@ However, a programmer can disable or replace these defaults.
 
 ##### Example
 
-A pointer member may represent a resource.
-[A `T*` should not do so](#Rr-ptr), but in older code, that's common.
-Consider a `T*` a possible owner and therefore suspect.
+一个指针成员可能代表了一个资源，[`T*`不应该这样做](#Rr-ptr)，但在老代码中，这很常见。
+让`T*`做为一个可能的持有者值这一做法是值得怀疑的。
 
     template<typename T>
     class Smart_ptr {
-        T* p;   // BAD: vague about ownership of *p
+        T* p;   // 糟糕: 模糊了*p的所有权
         // ...
     public:
-        // ... no user-defined default operations ...
+        // ... 没有用户定义的默认操作 ...
     };
 
     void use(Smart_ptr<int> p1)
     {
-        // error: p2.p leaked (if not nullptr and not owned by some other code)
+        // 错误：p2.p被泄漏了(如果p2不是nullptr，且不被其它代码持有)
         auto p2 = p1;
     }
 
 Note that if you define a destructor, you must define or delete [all default operations](#Rc-five):
+注意，如果你定义的析构函数，你需要定义或删除[所有的默认操作](#Rc-five)：
 
     template<typename T>
     class Smart_ptr2 {
-        T* p;   // BAD: vague about ownership of *p
+        T* p;   // 糟糕: 模糊了*p的所有权
         // ...
     public:
-        // ... no user-defined copy operations ...
-        ~Smart_ptr2() { delete p; }  // p is an owner!
+        // ... 没有用户定义的默认操作  ...
+        ~Smart_ptr2() { delete p; }  // p是一个所有者！
     };
 
     void use(Smart_ptr2<int> p1)
     {
-        auto p2 = p1;   // error: double deletion
+        auto p2 = p1;   // 错误：两次delete (译注：使用浅拷贝(shadow copy))
     }
 
 The default copy operation will just copy the `p1.p` into `p2.p` leading to a double destruction of `p1.p`. Be explicit about ownership:
+默认的拷贝操作仅仅将`p1.p`拷贝到`p2.p`，导致了两次销毁`p1.p`。明确所有权：
 
     template<typename T>
     class Smart_ptr3 {
-        owner<T*> p;   // OK: explicit about ownership of *p
+        owner<T*> p;   // OK: 明确了*p的所有权
         // ...
     public:
         // ...
-        // ... copy and move operations ...
+        // ... 拷贝和移动操作 ...
         ~Smart_ptr3() { delete p; }
     };
 
     void use(Smart_ptr3<int> p1)
     {
-        auto p2 = p1;   // OK: no double deletion
+        auto p2 = p1;   // OK: 没有两次删除
     }
 
 ##### Note
 
-Often the simplest way to get a destructor is to replace the pointer with a smart pointer (e.g., `std::unique_ptr`) and let the compiler arrange for proper destruction to be done implicitly.
+通常，获得析构函数最简单的方式是将指针替换成智能指针(如`std::unique_ptr`)，让编译来适当地处理销毁。
 
 ##### Note
 
-Why not just require all owning pointers to be "smart pointers"?
-That would sometimes require non-trivial code changes and may affect ABIs.
+为什么不要求全部的所有指针都是智能指针？
+这有时需要更改非平凡(non-trivial)代码，这可能会影响到ABI。
 
 ##### Enforcement
 
-* A class with a pointer data member is suspect.
-* A class with an `owner<T>` should define its default operations.
+* 具有指针数据成员的类是可疑的。
+* 具有`owner<T>`的类需要定义它的默认操作。
 
 
-### <a name="Rc-dtor-virtual"></a>C.35: A base class destructor should be either public and virtual, or protected and nonvirtual
+### <a name="Rc-dtor-virtual"></a>C.35: 基类的析构函数应当要么是public和virtual的，要么是protect和非virtual的
 
 ##### Reason
 
-To prevent undefined behavior.
-If the destructor is public, then calling code can attempt to destroy a derived class object through a base class pointer, and the result is undefined if the base class's destructor is non-virtual.
-If the destructor is protected, then calling code cannot destroy through a base class pointer and the destructor does not need to be virtual; it does need to be protected, not private, so that derived destructors can invoke it.
-In general, the writer of a base class does not know the appropriate action to be done upon destruction.
+为了防止未定义的行为。
+如果析构函数是公开的，那么可以通过基类的指针来销毁派生类对象，如果基类的析构函数不是virtual的，那么结果是未定义的。如果析构函数是受保护的，那么无法通过基类的指针来销毁派生类对象，所以析构函数不需要是virtual。析构函数不能是私有的(private)，这样派生类的析构函数可以调用它。
+通常，一个基类的作者不知道在销毁时要做的适当工作。
 
 ##### Discussion
 
-See [this in the Discussion section](#Sd-dtor).
+参见 [this in the Discussion section](#Sd-dtor).
 
 ##### Example, bad
 
