@@ -4201,8 +4201,8 @@ Destructor rules:
 * [C.32: 如果类具有原始指针(`T*`)或引用(`T&`)，考虑它是否有所有权 ](#Rc-dtor-ptr)
 * [C.33: 如果类有一个具有所有权的指针成员，定义或`=delete`一个析构函数](#Rc-dtor-ptr2)
 * [C.35: 基类的析构函数应当要么是public和virtual的，要么是protect和非virtual的](#Rc-dtor-virtual)
-* [C.36: A destructor may not fail](#Rc-dtor-fail)
-* [C.37: Make destructors `noexcept`](#Rc-dtor-noexcept)
+* [C.36: 析构函数应当不会失败](#Rc-dtor-fail)
+* [C.37: 让析构函数`noexcept`](#Rc-dtor-noexcept)
 
 Constructor rules:
 
@@ -4679,7 +4679,7 @@ The default copy operation will just copy the `p1.p` into `p2.p` leading to a do
 
 * 任何一个具有虚函数的类都应当有一个公有虚拟的析构函数，或一个受保护的非虚析构函数。
 
-### <a name="Rc-dtor-fail"></a>C.36: 析构函数应该不会失败
+### <a name="Rc-dtor-fail"></a>C.36: 析构函数应当不会失败
 
 ##### Reason
 
@@ -4713,48 +4713,46 @@ The default copy operation will just copy the `p1.p` into `p2.p` leading to a do
 
 ##### Note
 
-If a resource cannot be released and the program may not fail, try to signal the failure to the rest of the system somehow
-(maybe even by modifying some global state and hope something will notice and be able to take care of the problem).
-Be fully aware that this technique is special-purpose and error-prone.
-Consider the "my connection will not close" example.
-Probably there is a problem at the other end of the connection and only a piece of code responsible for both ends of the connection can properly handle the problem.
-The destructor could send a message (somehow) to the responsible part of the system, consider that to have closed the connection, and return normally.
+如果资源无法释放，程序可能不会失败，则尝试以某种方式向系统的其他部分发出失败信号(也许，甚至可以通过修改一些全局状态来让某些逻辑注意到并能够处理这个问题)，
+要充分认识到这种技术是专用的，并且容易出错。
+考虑“我的连接不会关闭”的例子，
+可能在连接的另一端有一个问题，只有负责连接两端的代码(逻辑)可以正确地处理这个问题，
+析构函数可以(以某种方式)向负责的系统发送一条消息，并认为它已经(成功)关闭了连接，然后正常返回。
 
 ##### Note
 
-If a destructor uses operations that may fail, it can catch exceptions and in some cases still complete successfully
-(e.g., by using a different clean-up mechanism from the one that threw an exception).
+如果析构函数执行了一些可能会失败的操作，它可以捕获异常并且在一些情况下可以成功完成
+（例如，通过使用与抛出异常的对象不同的清理机制）。
 
 ##### Enforcement
 
-(Simple) A destructor should be declared `noexcept` if it could throw.
+(简单) 如果析构函数会抛出异常，将其声明为`noexcept`。
 
-### <a name="Rc-dtor-noexcept"></a>C.37: Make destructors `noexcept`
+### <a name="Rc-dtor-noexcept"></a>C.37: 让析构函数`noexcept`
 
 ##### Reason
 
- [A destructor may not fail](#Rc-dtor-fail). If a destructor tries to exit with an exception, it's a bad design error and the program had better terminate.
+ [析构函数应当不会失败](#Rc-dtor-fail)，如果析构函数退出时有异常，那么这将是一个糟糕的设计错误，程序最好终止。
 
 ##### Note
 
-A destructor (either user-defined or compiler-generated) is implicitly declared `noexcept` (independently of what code is in its body) if all of the members of its class have `noexcept` destructors. By explicitly marking destructors `noexcept`, an author guards against the destructor becoming implicitly `noexcept(false)` through the addition or modification of a class member.
+如果类的所有成员的析构函数都是`noexcept`的，则析构函数(用户定义的或编译器生成的)将被隐式地声明为`noexcept`(独立于其主体中的代码)。通过显式地标记析构函数为`noexcept`，作者可以防止通过添加或修改类成员而隐式地将析构函数变为`noexcept(false)`。
 
 ##### Example
 
-Not all destructors are noexcept by default; one throwing member poisons the whole class hierarchy
+默认情况下，并非所有析构函数都是不抛出异常的；一个抛出异常的成员会破坏整个类层次结构：
 
     struct X {
-        Details x;  // happens to have a throwing destructor
+        Details x;  // 碰巧具有抛出异常的析构函数
         // ...
-        ~X() { }    // implicitly noexcept(false); aka can throw
+        ~X() { }    // 隐式的noexcept(false)，也就是说，可以抛出异常
     };
 
-So, if in doubt, declare a destructor noexcept.
+所以，如果有疑惑，将析构函数声明为`noexcept`。
 
 ##### Note
 
-Why not then declare all destructors noexcept?
-Because that would in many cases -- especially simple cases -- be distracting clutter.
+那么，为什么不将所有的析构函数都声明为`noexcept`呢？因为在很多情况下，特别是一些简单的情况，这会分散注意力。
 
 ##### Enforcement
 
