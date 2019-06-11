@@ -4634,13 +4634,13 @@ The default copy operation will just copy the `p1.p` into `p2.p` leading to a do
 
 ##### Example, bad
 
-    struct Base {  // BAD: implicitly has a public nonvirtual destructor
+    struct Base {  // 糟糕：隐含的公有的非virtual析构函数
         virtual void f();
     };
 
     struct D : Base {
         string s {"a resource needing cleanup"};
-        ~D() { /* ... do some cleanup ... */ }
+        ~D() { /* ... 做事清理工作 ... */ }
         // ...
     };
 
@@ -4648,43 +4648,43 @@ The default copy operation will just copy the `p1.p` into `p2.p` leading to a do
     {
         unique_ptr<Base> p = make_unique<D>();
         // ...
-    } // p's destruction calls ~Base(), not ~D(), which leaks D::s and possibly more
+    } // p的销毁调用了~Base()，而不是~D()，泄漏了D::s或者更多。
 
 ##### Note
 
-A virtual function defines an interface to derived classes that can be used without looking at the derived classes.
-If the interface allows destroying, it should be safe to do so.
+虚函数定义的派生类接口，可以不通过派生类来调用它。如果接口允许销毁(对象)，它应该是安全的。
 
 ##### Note
 
-A destructor must be nonprivate or it will prevent using the type:
+析构函数应该是非私有的，否则会阻止该类型(该类定义的类型)的使用。
 
     class X {
-        ~X();   // private destructor
+        ~X();   // 私有的析构函数
         // ...
     };
 
     void use()
     {
-        X a;                        // error: cannot destroy
-        auto p = make_unique<X>();  // error: cannot destroy
+        X a;                        // 错误：不能销毁
+        auto p = make_unique<X>();  // 错误：不能销毁
     }
 
 ##### Exception
 
-We can imagine one case where you could want a protected virtual destructor: When an object of a derived type (and only of such a type) should be allowed to destroy *another* object (not itself) through a pointer to base. We haven't seen such a case in practice, though.
+我们可以想象一种情况,你可能想要一个受保护的虚拟析构函数：当一个派生类对象(不是基类本身的对象)应当允许通过*基类指针*销毁*另一个*对象(不是其本身)，尽管我们没有在实践中见过这种情况。
+*（译注：由于基类的析构函数是受保护的，因此无法直接通过基类指针来销毁对象，但却可以在派生的析构函数中通过基类指针来销毁其它对象，这是由于受保护的基类接口可以在派生类中被调用）*
 
 
 ##### Enforcement
 
-* A class with any virtual functions should have a destructor that is either public and virtual or else protected and nonvirtual.
+* 任何一个具有虚函数的类都应当有一个公有虚拟的析构函数，或一个受保护的非虚析构函数。
 
-### <a name="Rc-dtor-fail"></a>C.36: A destructor may not fail
+### <a name="Rc-dtor-fail"></a>C.36: 析构函数应该不会失败
 
 ##### Reason
 
-In general we do not know how to write error-free code if a destructor should fail.
-The standard library requires that all classes it deals with have destructors that do not exit by throwing.
+通常，如果析构函数会失败，我们不知道如何写没有错误的代码。
+标准库要求它所处理的类的析构函数不会通过抛出异常来退出。
 
 ##### Example
 
@@ -4703,17 +4703,13 @@ The standard library requires that all classes it deals with have destructors th
 
 ##### Note
 
-Many have tried to devise a fool-proof scheme for dealing with failure in destructors.
-None have succeeded to come up with a general scheme.
-This can be a real practical problem: For example, what about a socket that won't close?
-The writer of a destructor does not know why the destructor is called and cannot "refuse to act" by throwing an exception.
-See [discussion](#Sd-dtor).
-To make the problem worse, many "close/release" operations are not retryable.
-If at all possible, consider failure to close/cleanup a fundamental design error and terminate.
+很多试图设计过能万无一失地处理析构函数中失败的方案，但没有人能成功地想出一个通用方案。
+这可能是一个真正的实际问题：例如，一个不会关闭的套接字(socket)，析构函数的作者不知道为什么要调用析构函数，以及为什么不能抛出异常来“拒绝执行”，参见[讨论](#Sd-dtor)。
+使问题更糟糕的是，很多“关闭/释放”操作是不能重试的(retryable)。 如果可能的话，将”关闭/清理“操作的失败看成是设计的缺陷，(失败发生后直接)退出程序。
 
 ##### Note
 
-Declare a destructor `noexcept`. That will ensure that it either completes normally or terminate the program.
+将析构函数声明为`noexcept`，可以保证它要么正常完成，要么退出程序。
 
 ##### Note
 
