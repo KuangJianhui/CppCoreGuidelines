@@ -4194,7 +4194,7 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.21: 如果你定义或`=delete`了任何默认操作，把所有默认操作都定义或`=delete`掉](#Rc-five)
 * [C.22: 让默认操作保持一致](#Rc-matched)
 
-Destructor rules:
+析构函数规则:
 
 * [C.30: 定义析构函数，如果类需要显示地销毁对象](#Rc-dtor)
 * [C.31: 类所获取的所有资源，都需由析构函数来释放](#Rc-dtor-release)
@@ -4204,11 +4204,11 @@ Destructor rules:
 * [C.36: 析构函数应当不会失败](#Rc-dtor-fail)
 * [C.37: 让析构函数`noexcept`](#Rc-dtor-noexcept)
 
-Constructor rules:
+构造函数规则:
 
-* [C.40: Define a constructor if a class has an invariant](#Rc-ctor)
-* [C.41: A constructor should create a fully initialized object](#Rc-complete)
-* [C.42: If a constructor cannot construct a valid object, throw an exception](#Rc-throw)
+* [C.40: 如果类具有不变式，定义一个构造函数](#Rc-ctor)
+* [C.41: 构造函数应当创建一个完全初始化的对象](#Rc-complete)
+* [C.42: 抛出异常，如果构造函数不能构造出合法的对象](#Rc-throw)
 * [C.43: Ensure that a copyable (value type) class has a default constructor](#Rc-default0)
 * [C.44: Prefer default constructors to be simple and non-throwing](#Rc-default00)
 * [C.45: Don't define a default constructor that only initializes data members; use member initializers instead](#Rc-default)
@@ -4756,37 +4756,36 @@ The default copy operation will just copy the `p1.p` into `p2.p` leading to a do
 
 ##### Enforcement
 
-(Simple) A destructor should be declared `noexcept` if it could throw.
+(简单) 如果一个析构函数会抛出异常，那么它应该被声明为`noexcept`。
 
-## <a name="SS-ctor"></a>C.ctor: Constructors
+## <a name="SS-ctor"></a>C.ctor: 构造函数
 
-A constructor defines how an object is initialized (constructed).
+构造函数定义了一个对象如何被初始化(构造)。
 
-### <a name="Rc-ctor"></a>C.40: Define a constructor if a class has an invariant
+### <a name="Rc-ctor"></a>C.40: 如果类具有不变式，定义一个构造函数
 
 ##### Reason
 
-That's what constructors are for.
+这就是构造函数的作用。
 
 ##### Example
 
-    class Date {  // a Date represents a valid date
-                  // in the January 1, 1900 to December 31, 2100 range
+    class Date {  // a Date represents a valid date Date代表一个在1900年1月1和2100年12月31日之间的合法的日期
         Date(int dd, int mm, int yy)
             :d{dd}, m{mm}, y{yy}
         {
-            if (!is_valid(d, m, y)) throw Bad_date{};  // enforce invariant
+            if (!is_valid(d, m, y)) throw Bad_date{};  // 强制一个不变式
         }
         // ...
     private:
         int d, m, y;
     };
 
-It is often a good idea to express the invariant as an `Ensures` on the constructor.
+在构造函数中使用`Ensures`来表达不变式通常是一个好的想法。
 
 ##### Note
 
-A constructor can be used for convenience even if a class does not have an invariant. For example:
+即使类没有不变式，也可以用构造函数以方便使用，例如:
 
     struct Rec {
         string s;
@@ -4800,74 +4799,76 @@ A constructor can be used for convenience even if a class does not have an invar
 
 ##### Note
 
-The C++11 initializer list rule eliminates the need for many constructors. For example:
+C++11的初始化列表可以消除对许多构造函数的需求，例如：
 
     struct Rec2{
         string s;
         int i;
-        Rec2(const string& ss, int ii = 0) :s{ss}, i{ii} {}   // redundant
+        Rec2(const string& ss, int ii = 0) :s{ss}, i{ii} {}   // 冗余的
     };
 
     Rec2 r1 {"Foo", 7};
     Rec2 r2 {"Bar"};
 
-The `Rec2` constructor is redundant.
-Also, the default for `int` would be better done as a [member initializer](#Rc-in-class-initializer).
+`Rec2`的构造函数是冗余的，同样，`int`的默认值作为[成员初始化器](#Rc-in-class-initializer)会更好。
 
-**See also**: [construct valid object](#Rc-complete) and [constructor throws](#Rc-throw).
+**参见**: [构造合法的对象](#Rc-complete) 和 [构造函数异常抛出](#Rc-throw).
 
 ##### Enforcement
 
-* Flag classes with user-defined copy operations but no constructor (a user-defined copy is a good indicator that the class has an invariant)
+* 标出含有用户定义的拷贝操作但没有构造函数的类(用户定义的拷贝是该类具有不变式的良好标识)。
 
-### <a name="Rc-complete"></a>C.41: A constructor should create a fully initialized object
+### <a name="Rc-complete"></a>C.41: 构造函数应当创建一个完全初始化的对象
 
 ##### Reason
 
-A constructor establishes the invariant for a class. A user of a class should be able to assume that a constructed object is usable.
+构造函数为类建立不变式，类的用户应该能够假定构好的对象是可用的。
 
 ##### Example, bad
 
     class X1 {
-        FILE* f;   // call init() before any other function
+        FILE* f;   // 在调用任何函数之前先调用init()
         // ...
     public:
         X1() {}
-        void init();   // initialize f
-        void read();   // read from f
+        void init();   // 初始化f
+        void read();   // 从f中读数据
         // ...
     };
 
     void f()
     {
         X1 file;
-        file.read();   // crash or bad read!
+        file.read();   // crash或读了错误数据
         // ...
-        file.init();   // too late
+        file.init();   // 太迟了
         // ...
     }
 
-Compilers do not read comments.
+编译器不会阅读注释。
 
-##### Exception
+##### 例外
 
-If a valid object cannot conveniently be constructed by a constructor, [use a factory function](#Rc-factory).
+如果一个合法的对象不能由构造函数方便地构造出来，参见[使用工厂方法](#Rc-factory)。
 
 ##### Enforcement
 
 * (Simple) Every constructor should initialize every member variable (either explicitly, via a delegating ctor call or via default construction).
 * (Unknown) If a constructor has an `Ensures` contract, try to see if it holds as a postcondition.
 
+* (简单) 每个构造函数都应该初始化所有的成员变量(显示式地通过代理构造函数或默认构造函数)。
+* (未知) 如果构造函数有一个`Ensures`契约，试着查看它是否也作为后置条件。
+
 ##### Note
 
-If a constructor acquires a resource (to create a valid object), that resource should be [released by the destructor](#Rc-dtor-release).
-The idiom of having constructors acquire resources and destructors release them is called [RAII](#Rr-raii) ("Resource Acquisition Is Initialization").
+如果构造函数获得了一个资源(创建了一个合法的对象)，那么，该资源应该[由构造函数进行释放](#Rc-dtor-release)。
+由构造函数获取资源，并由析构函数释放资源的习惯用法称为[RAII](#Rr-raii)(“资源获取即初始化”)。
 
-### <a name="Rc-throw"></a>C.42: If a constructor cannot construct a valid object, throw an exception
+### <a name="Rc-throw"></a>C.42: 抛出异常，如果构造函数不能构造出合法的对象
 
 ##### Reason
 
-Leaving behind an invalid object is asking for trouble.
+留下一个不合法的对象会引来麻烦。
 
 ##### Example
 
@@ -4882,21 +4883,21 @@ Leaving behind an invalid object is asking for trouble.
             // ...
         }
 
-        void read();      // read from f
+        void read();      // 从f中读数据
         // ...
     };
 
     void f()
     {
-        X2 file {"Zeno"}; // throws if file isn't open
+        X2 file {"Zeno"}; // 如果file没有打开，抛出异常
         file.read();      // fine
         // ...
     }
 
-##### Example, bad
+##### 糟糕的示例
 
-    class X3 {     // bad: the constructor leaves a non-valid object behind
-        FILE* f;   // call is_valid() before any other function
+    class X3 {     // bad: 构造函数给后面留下了一个不合法的对象
+        FILE* f;   // 在调用任何函数之前，先调用is_valid()
         bool valid;
         // ...
     public:
@@ -4908,39 +4909,38 @@ Leaving behind an invalid object is asking for trouble.
         }
 
         bool is_valid() { return valid; }
-        void read();   // read from f
+        void read();   // 从f中读数据
         // ...
     };
 
     void f()
     {
         X3 file {"Heraclides"};
-        file.read();   // crash or bad read!
+        file.read();   // crash或读了错误数据
         // ...
         if (file.is_valid()) {
             file.read();
             // ...
         }
         else {
-            // ... handle error ...
+            // ... 错误处理 ...
         }
         // ...
     }
 
 ##### Note
 
-For a variable definition (e.g., on the stack or as a member of another object) there is no explicit function call from which an error code could be returned.
-Leaving behind an invalid object and relying on users to consistently check an `is_valid()` function before use is tedious, error-prone, and inefficient.
+对于变量的定义(如，在栈上或作为其它对象的成员)，没有能返回错误代码的显式函数调用，留下的非法对象依赖于用户在使用之前都要检查`is_valid()`函数，这种检查是乏味的、易于出错的、没有效率的。
 
-##### Exception
+##### 例外
 
-There are domains, such as some hard-real-time systems (think airplane controls) where (without additional tool support) exception handling is not sufficiently predictable from a timing perspective.
-There the `is_valid()` technique must be used. In such cases, check `is_valid()` consistently and immediately to simulate [RAII](#Rr-raii).
+有一些领域，从时间的角度来看，异常处理是低效的，如一些硬实时系统(想像一下飞机控制)。
+这里必须使用`is_valid()`这一技术，在这种情况下，可能通过始终如一地即时检查`is_valid()`来模拟[RAII](#Rr-raii)。
 
-##### Alternative
+##### 可选方案
 
-If you feel tempted to use some "post-constructor initialization" or "two-stage initialization" idiom, try not to do that.
-If you really have to, look at [factory functions](#Rc-factory).
+如果你对“构造后初始化”或“两阶段初始化”有兴趣，尝试不要这样做，如果真的有必要这样做，参考[工厂方法](#Rc-factory)。
+*译注：“构造后初始化”或“两阶段初始化”是指对象创建之后，调用一些类似init的方法来初始化对象。*
 
 ##### Note
 
@@ -15035,7 +15035,7 @@ The class invariant - here stated as a comment - is established by the construct
 `new` throws if it cannot allocate the required memory.
 The operators, notably the subscript operator, relies on the invariant.
 
-**See also**: [If a constructor cannot construct a valid object, throw an exception](#Rc-throw)
+**See also**: [抛出异常，如果构造函数不能构造出合法的对象](#Rc-throw)
 
 ##### Enforcement
 
