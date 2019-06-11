@@ -4209,7 +4209,7 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.40: 如果类具有不变式，定义一个构造函数](#Rc-ctor)
 * [C.41: 构造函数应当创建一个完全初始化的对象](#Rc-complete)
 * [C.42: 抛出异常，如果构造函数不能构造出合法的对象](#Rc-throw)
-* [C.43: Ensure that a copyable (value type) class has a default constructor](#Rc-default0)
+* [C.43: 确保可拷贝的类型(值类型)有一个默认构造函数](#Rc-default0)
 * [C.44: Prefer default constructors to be simple and non-throwing](#Rc-default00)
 * [C.45: Don't define a default constructor that only initializes data members; use member initializers instead](#Rc-default)
 * [C.46: By default, declare single-argument constructors `explicit`](#Rc-explicit)
@@ -4935,7 +4935,7 @@ C++11的初始化列表可以消除对许多构造函数的需求，例如：
 ##### 例外
 
 有一些领域，从时间的角度来看，异常处理是低效的，如一些硬实时系统(想像一下飞机控制)。
-这里必须使用`is_valid()`这一技术，在这种情况下，可能通过始终如一地即时检查`is_valid()`来模拟[RAII](#Rr-raii)。
+这里必须使用`is_valid()`这一技术，在这种情况下，可以通过始终如一地即时检查`is_valid()`来模拟[RAII](#Rr-raii)。
 
 ##### 可选方案
 
@@ -4944,49 +4944,47 @@ C++11的初始化列表可以消除对许多构造函数的需求，例如：
 
 ##### Note
 
-One reason people have used `init()` functions rather than doing the initialization work in a constructor has been to avoid code replication.
-[Delegating constructors](#Rc-delegating) and [default member initialization](#Rc-in-class-initializer) do that better.
-Another reason has been to delay initialization until an object is needed; the solution to that is often [not to declare a variable until it can be properly initialized](#Res-init)
+人们使用`init`方法而不是在构造函数中执行初始化工作的其中一个原因是避免重复代码，[委托构造函数](#Rc-delegating)和[成员变量默认初始化](#Rc-in-class-initializer)可以做的更好。
+另一个原因是延迟初到对象需要时才初始化，这种情况的解决方法经常是[不要声明一个变量，直到它可以被正确地初始化](#Res-init)。
 
 ##### Enforcement
 
 ???
 
-### <a name="Rc-default0"></a>C.43: Ensure that a copyable (value type) class has a default constructor
+### <a name="Rc-default0"></a>C.43: 确保可拷贝的类型(值类型)有一个默认构造函数
 
 ##### Reason
 
-Many language and library facilities rely on default constructors to initialize their elements, e.g. `T a[10]` and `std::vector<T> v(10)`.
-A default constructor often simplifies the task of defining a suitable [moved-from state](#???) for a type that is also copyable.
+许多语言和库设施依赖默认构造函数来初始化自己的元素，例如，`T a[10]`和`std::vector<T> v(10)`。
+默认构造函数通常可以让定义一个可拷贝的类型变得简单，参见[moved-from state](#???)。
 
 ##### Note
 
-A [value type](#SS-concrete) is a class that is copyable (and usually also comparable).
-It is closely related to the notion of Regular type from [EoP](http://elementsofprogramming.com/) and [the Palo Alto TR](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3351.pdf).
+[值类型](#SS-concrete)是一种可以拷贝(通常也能比较)的类，它也和普通类型的概念密切相关，参见[EoP](http://elementsofprogramming.com/)和[the Palo Alto TR](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3351.pdf)
 
 ##### Example
 
-    class Date { // BAD: no default constructor
+    class Date { // BAD: 没有默认构造函数
     public:
         Date(int dd, int mm, int yyyy);
         // ...
     };
 
-    vector<Date> vd1(1000);   // default Date needed here
-    vector<Date> vd2(1000, Date{Month::October, 7, 1885});   // alternative
+    vector<Date> vd1(1000);   // 这里需要Date的默认构造函数
+    vector<Date> vd2(1000, Date{Month::October, 7, 1885});   // 可选方案
 
-The default constructor is only auto-generated if there is no user-declared constructor, hence it's impossible to initialize the vector `vd1` in the example above.
-The absence of a default value can cause surprises for users and complicate its use, so if one can be reasonably defined, it should be.
+默认构造函数只有在没有声明的构造函数时才会(由编译器)自动生成，因此，在上述例子中不能初始化`vd1`。
+默认构造函数的缺失可能让用户感到吃惊，并将使用复杂化，所以如果有合适的理由就应该定义它。
 
-`Date` is chosen to encourage thought:
-There is no "natural" default date (the big bang is too far back in time to be useful for most people), so this example is non-trivial.
-`{0, 0, 0}` is not a valid date in most calendar systems, so choosing that would be introducing something like floating-point's `NaN`.
-However, most realistic `Date` classes have a "first date" (e.g. January 1, 1970 is popular), so making that the default is usually trivial.
+选择`Date`是来鼓励去思考：
+没有”自然的“默认日期(宇宙大爆炸对大多数人来说太过遥远而没有用处)，所以这个例子是非平凡的(non-trivial)。
+`{0, 0, 0}`在大多数的日历系统中都是非法的，所以选择这个值类似引入了浮点数的`NaN`。
+然而，大多数的`Date`类都有一个”第一天“(例如，1970/1/1就是很常见)，所以选择这一天作为默认值是无关紧要的。
 
     class Date {
     public:
         Date(int dd, int mm, int yyyy);
-        Date() = default; // [See also](#Rc-default)
+        Date() = default; // [参见](#Rc-default)
         // ...
     private:
         int dd = 1;
