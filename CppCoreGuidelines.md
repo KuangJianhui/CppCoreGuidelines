@@ -4210,7 +4210,7 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.41: 构造函数应当创建一个完全初始化的对象](#Rc-complete)
 * [C.42: 抛出异常，如果构造函数不能构造出合法的对象](#Rc-throw)
 * [C.43: 确保可拷贝的类型(值类型)有一个默认构造函数](#Rc-default0)
-* [C.44: Prefer default constructors to be simple and non-throwing](#Rc-default00)
+* [C.44: 优先使用简单而没有异常的默认构造函数](#Rc-default00)
 * [C.45: Don't define a default constructor that only initializes data members; use member initializers instead](#Rc-default)
 * [C.46: By default, declare single-argument constructors `explicit`](#Rc-explicit)
 * [C.47: Define and initialize member variables in the order of member declaration](#Rc-order)
@@ -5065,16 +5065,16 @@ Beware that built-in types are not properly default constructed:
 * 标出能使用`=`进行拷贝，但没有默认构造函数的类。
 * 标出能使用`==`进行比较，但不能拷贝的类。
 
-### <a name="Rc-default00"></a>C.44: Prefer default constructors to be simple and non-throwing
+### <a name="Rc-default00"></a>C.44: 优先使用简单且没异常抛出的默认构造函数
 
 ##### Reason
 
-Being able to set a value to "the default" without operations that might fail simplifies error handling and reasoning about move operations.
+能够通过使用不可能失败的操作将值设为“默认值”，这简化了有关移动操作的错误处理和推理。
 
-##### Example, problematic
+##### 有问题的示例
 
     template<typename T>
-    // elem points to space-elem element allocated using new
+    // elem指向使用new分配的space-elem元素
     class Vector0 {
     public:
         Vector0() :Vector0{0} {}
@@ -5085,18 +5085,22 @@ Being able to set a value to "the default" without operations that might fail si
         T* space;
         T* last;
     };
-
+<!-- 
 This is nice and general, but setting a `Vector0` to empty after an error involves an allocation, which may fail.
 Also, having a default `Vector` represented as `{new T[0], 0, 0}` seems wasteful.
-For example, `Vector0<int> v[100]` costs 100 allocations.
+For example, `Vector0<int> v[100]` costs 100 allocations. -->
+
+这个很不错且通用，但是，错误之后将`Vector0`设置为空包含到一个(new)分配，这可能会失败（译注：new可能会抛出异常，如new T[0]，如果抛出异常，成员变量都是未初始化的）。
+此外, 将默认的 `Vector`设置为`{new T[0], 0, 0}`似乎是浪费的，
+例如, `Vector0<int> v[100]`的成本为100次(new)分配。
 
 ##### Example
 
     template<typename T>
-    // elem is nullptr or elem points to space-elem element allocated using new
+    // elem是nullptr或指向使用new分配的space-elem元素
     class Vector1 {
     public:
-        // sets the representation to {nullptr, nullptr, nullptr}; doesn't throw
+        // 设置为{nullptr, nullptr, nullptr}，且不会抛出异常
         Vector1() noexcept {}
         Vector1(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
         // ...
@@ -5106,22 +5110,23 @@ For example, `Vector0<int> v[100]` costs 100 allocations.
         T* last = nullptr;
     };
 
-Using `{nullptr, nullptr, nullptr}` makes `Vector1{}` cheap, but a special case and implies run-time checks.
-Setting a `Vector1` to empty after detecting an error is trivial.
+使用`{nullptr, nullptr, nullptr}`让`Vector1{}`很廉价，但特殊情况意味着需要运行时检查。
+检测到错误之后将`Vector1`设置为空是平凡的(trivial)。
 
 ##### Enforcement
 
-* Flag throwing default constructors
+* 标出会抛出异常的默认构造函数。
 
-### <a name="Rc-default"></a>C.45: Don't define a default constructor that only initializes data members; use in-class member initializers instead
+### <a name="Rc-default"></a>C.45: 如果只是初始化数据成员，不要定义默认构造函数；使用类内成员初始化器来代替
 
 ##### Reason
 
-Using in-class member initializers lets the compiler generate the function for you. The compiler-generated function can be more efficient.
+使用类内成员初始化器可以让编译器为您生成(初始化)函数，编译器生成的函数可能会更有效。
+
 
 ##### Example, bad
 
-    class X1 { // BAD: doesn't use member initializers
+    class X1 { // BAD: 没有使用成员初始化器
         string s;
         int i;
     public:
