@@ -4853,10 +4853,7 @@ C++11的初始化列表可以消除对许多构造函数的需求，例如：
 
 ##### Enforcement
 
-* (Simple) Every constructor should initialize every member variable (either explicitly, via a delegating ctor call or via default construction).
-* (Unknown) If a constructor has an `Ensures` contract, try to see if it holds as a postcondition.
-
-* (简单) 每个构造函数都应该初始化所有的成员变量(显示式地通过代理构造函数或默认构造函数)。
+* (简单) 每个构造函数都应该初始化所有的成员变量(显示式地通过委托构造函数或默认构造函数)。
 * (未知) 如果构造函数有一个`Ensures`契约，试着查看它是否也作为后置条件。
 
 ##### Note
@@ -4976,10 +4973,10 @@ C++11的初始化列表可以消除对许多构造函数的需求，例如：
 默认构造函数只有在没有声明的构造函数时才会(由编译器)自动生成，因此，在上述例子中不能初始化`vd1`。
 默认构造函数的缺失可能让用户感到吃惊，并将使用复杂化，所以如果有合适的理由就应该定义它。
 
-选择`Date`是来鼓励去思考：
+选择`Date`是为了鼓励思考：
 没有”自然的“默认日期(宇宙大爆炸对大多数人来说太过遥远而没有用处)，所以这个例子是非平凡的(non-trivial)。
-`{0, 0, 0}`在大多数的日历系统中都是非法的，所以选择这个值类似引入了浮点数的`NaN`。
-然而，大多数的`Date`类都有一个”第一天“(例如，1970/1/1就是很常见)，所以选择这一天作为默认值是无关紧要的。
+`{0, 0, 0}`在大多数的日历系统中都是非法的，所以选择这个值类似于引入了浮点数的`NaN`。
+然而，大多数的`Date`类都有”第一天“(例如，1970/1/1就很常见)，所以选择这一天作为默认值是无关紧要的。
 
     class Date {
     public:
@@ -4997,7 +4994,7 @@ C++11的初始化列表可以消除对许多构造函数的需求，例如：
 
 ##### Note
 
-A class with members that all have default constructors implicitly gets a default constructor:
+所有成员都具有默认构造函数的类隐式地获得一个默认构造函数：
 
     struct X {
         string s;
@@ -5021,57 +5018,52 @@ Beware that built-in types are not properly default constructed:
         ++x.i;
     }
 
-Statically allocated objects of built-in types are by default initialized to `0`, but local built-in variables are not.
-Beware that your compiler may default initialize local built-in variables, whereas an optimized build will not.
-Thus, code like the example above may appear to work, but it relies on undefined behavior.
-Assuming that you want initialization, an explicit default initialization can help:
+静态分配的内置类型对象默认初始化成`0`，但内置类型的局部变量不会(默认初始化)。
+注意，你的编译器可能会默认初始化局部的内置类型变量，然而，优化的构建却不会(译注：如打开-O2优化时)。
+因此，类似上面示例中的代码看起来可能会工作，但这依赖于未定义的行为。
+假设你想要初始化，一个显式的默认初始化可以提供帮助：
 
     struct X {
         string s;
-        int i {};   // default initialize (to 0)
+        int i {};   // 默认初始化成0
     };
 
 ##### Notes
 
-Classes that don't have a reasonable default construction are usually not copyable either, so they don't fall under this guideline.
+没有合理的默认构造的类通常也不可拷贝，所以它们不属于这个准则，
+例如，基类不属于值类型(基类不应该能拷贝)，所以不需要一个默认构造函数：
 
-For example, a base class is not a value type (base classes should not be copyable) and so does not necessarily need a default constructor:
-
-    // Shape is an abstract base class, not a copyable value type.
-    // It may or may not need a default constructor.
+    // Shape是一个抽象的基类，不是一个可拷贝的值类型。
+    // 它可能需要，也可能不需要一个默认构造函数。
     struct Shape {
         virtual void draw() = 0;
         virtual void rotate(int) = 0;
-        // =delete copy/move functions
+        // =delete 拷贝/移动操作
         // ...
     };
 
-A class that must acquire a caller-provided resource during construction often cannot have a default constructor, but it does not fall under this guideline because such a class is usually not copyable anyway:
+在构造过程中必须获得调用者提供的资源的类通常不能有默认的构造函数，但是它不属于这个准则，因为这样的类通常是不可拷贝的:
 
-    // std::lock_guard is not a copyable value type.
-    // It does not have a default constructor.
-    lock_guard g {mx};  // guard the mutex mx
+    // std::lock_guard不是一个可拷贝的值类型，它没有一个默认构造函数
+    lock_guard g {mx};  // guard the mutex mx 
     lock_guard g2;      // error: guarding nothing
 
-A class that has a "special state" that must be handled separately from other states by member functions or users causes extra work
-(and most likely more errors). Such a type can naturally use the special state as a default constructed value, whether or not it is copyable:
+拥有“特殊状态”的类必须由成员函数或使用者与其他状态分开处理，这将导致额外的工作，而且很可能出现更多错误。这种类型可以自然地使用特殊状态作为默认构造的值，不管它是否可复制:
 
-    // std::ofstream is not a copyable value type.
-    // It does happen to have a default constructor
-    // that goes along with a special "not open" state.
+    // std::ofstream是不可拷贝的值类型。
+    // 它碰巧有一个默认构造函数，附带一下“不可打开”的特殊状态。
     ofstream out {"Foobar"};
     // ...
     out << log(time, transaction);
 
-Similar special-state types that are copyable, such as copyable smart pointers that have the special state "==nullptr", should use the special state as their default constructed value.
+类似的可拷贝的特殊状态类型，比如，可拷贝的智能指针具有特殊状态"==nullptr"，应该使用特殊状态作为它们的默认构造值。
 
-However, it is preferable to have a default constructor default to a meaningful state such as `std::string`s `""` and `std::vector`s `{}`.
+但是，最好让默认构造函数将其默认为有意义的状态，例如，`std::string`默认为`""`和`std::vector`默认为`{}`。
 
 ##### Enforcement
 
-* Flag classes that are copyable by `=` without a default constructor
-* Flag classes that are comparable with `==` but not copyable
-
+* 标出能使用`=`进行拷贝，但没有默认构造函数的类。
+* 标出能使用`==`进行比较，但不能拷贝的类。
 
 ### <a name="Rc-default00"></a>C.44: Prefer default constructors to be simple and non-throwing
 
