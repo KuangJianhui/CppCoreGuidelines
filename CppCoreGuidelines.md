@@ -4211,7 +4211,7 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.42: 抛出异常，如果构造函数不能构造出合法的对象](#Rc-throw)
 * [C.43: 确保可拷贝的类型(值类型)有一个默认构造函数](#Rc-default0)
 * [C.44: 优先使用简单而没有异常的默认构造函数](#Rc-default00)
-* [C.45: Don't define a default constructor that only initializes data members; use member initializers instead](#Rc-default)
+* [C.45: 不要定义只初始化数据成员的默认构造函数；使用类内成员初始化器来代替](#Rc-default)
 * [C.46: By default, declare single-argument constructors `explicit`](#Rc-explicit)
 * [C.47: Define and initialize member variables in the order of member declaration](#Rc-order)
 * [C.48: Prefer in-class initializers to member initializers in constructors for constant initializers](#Rc-in-class-initializer)
@@ -5117,12 +5117,11 @@ For example, `Vector0<int> v[100]` costs 100 allocations. -->
 
 * 标出会抛出异常的默认构造函数。
 
-### <a name="Rc-default"></a>C.45: 如果只是初始化数据成员，不要定义默认构造函数；使用类内成员初始化器来代替
+### <a name="Rc-default"></a>C.45: 不要定义只初始化数据成员的默认构造函数；使用类内成员初始化器来代替
 
 ##### Reason
 
 使用类内成员初始化器可以让编译器为您生成(初始化)函数，编译器生成的函数可能会更有效。
-
 
 ##### Example, bad
 
@@ -5140,34 +5139,35 @@ For example, `Vector0<int> v[100]` costs 100 allocations. -->
         string s = "default";
         int i = 1;
     public:
-        // use compiler-generated default constructor
+        // 使用编译器生成的默认构造函数
         // ...
     };
 
 ##### Enforcement
 
-(Simple) A default constructor should do more than just initialize member variables with constants.
+(简单) 默认构造函数做的事情应当不仅仅是给成员变量初始化为常量值。
 
-### <a name="Rc-explicit"></a>C.46: By default, declare single-argument constructors explicit
+### <a name="Rc-explicit"></a>C.46: By default, declare single-argument constructors explicit 默认情况下，声明单一参数的构建函数为显示式的
 
 ##### Reason
 
-To avoid unintended conversions.
+来避免意想不到的转换。*（译注：C++中的explicit关键字只能用于修饰单个参数的构造函数，表明该构造函数是显式的；相对应的关键字是implicit，构造函数默认情况下声明为implicit(隐式的)）*
 
-##### Example, bad
+##### 糟糕的示例
 
     class String {
         // ...
     public:
-        String(int);   // BAD
+        String(int);   // 糟糕
         // ...
     };
 
-    String s = 10;   // surprise: string of size 10
+    String s = 10;   // 惊讶：长度为10的字符串
 
-##### Exception
+##### 例外
 
 If you really want an implicit conversion from the constructor argument type to the class type, don't use `explicit`:
+如果你真的需要从构造函数的参数类型隐式转换到类类型，不要使用`explicit`:
 
     class Complex {
         // ...
