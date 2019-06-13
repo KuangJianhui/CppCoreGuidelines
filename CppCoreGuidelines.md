@@ -4213,10 +4213,10 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.44: 优先使用简单而没有异常的默认构造函数](#Rc-default00)
 * [C.45: 不要定义只初始化数据成员的默认构造函数；使用类内成员初始化器来代替](#Rc-default)
 * [C.46: By default, declare single-argument constructors `explicit`](#Rc-explicit)
-* [C.47: Define and initialize member variables in the order of member declaration](#Rc-order)
-* [C.48: Prefer in-class initializers to member initializers in constructors for constant initializers](#Rc-in-class-initializer)
-* [C.49: Prefer initialization to assignment in constructors](#Rc-initialize)
-* [C.50: Use a factory function if you need "virtual behavior" during initialization](#Rc-factory)
+* [C.47: 按成员声明的顺序定义和初始化成员变量](#Rc-order)
+* [C.48: 对于常量初始化，优先使用类内初始化器，而不是成员初始化器](#Rc-in-class-initializer)
+* [C.49: 在构造函数中，相比于赋值，优先使用初始化](#Rc-initialize)
+* [C.50: 使用工厂方法，如果在初始化过程中需要“虚拟的行为”](#Rc-factory)
 * [C.51: Use delegating constructors to represent common actions for all constructors of a class](#Rc-delegating)
 * [C.52: Use inheriting constructors to import constructors into a derived class that does not need further explicit initialization](#Rc-inheriting)
 
@@ -5166,71 +5166,70 @@ For example, `Vector0<int> v[100]` costs 100 allocations. -->
 
 ##### 例外
 
-If you really want an implicit conversion from the constructor argument type to the class type, don't use `explicit`:
 如果你真的需要从构造函数的参数类型隐式转换到类类型，不要使用`explicit`:
 
     class Complex {
         // ...
     public:
-        Complex(double d);   // OK: we want a conversion from d to {d, 0}
+        Complex(double d);   // OK: 我们希望从d转换到{d, 0}
         // ...
     };
 
-    Complex z = 10.7;   // unsurprising conversion
+    Complex z = 10.7;   // 不意外的转换
 
-**See also**: [Discussion of implicit conversions](#Ro-conversion)
+**参见**: [隐式转换的讨论](#Ro-conversion)
 
 ##### Note
 
-Copy and move constructors should not be made `explicit` because they do not perform conversions. Explicit copy/move constructors make passing and returning by value difficult.
+拷贝和移动构造函数不应该设置为`explicit`，因为它们不执行转换。显式的拷贝/移动构造函数让按值传递和按值返回变得困难*(译注：将拷贝/移动构造函数声明为`explicit`时，无法在声明时使用赋值的方式来初始化一个变量)*。
 
 ##### Enforcement
 
-(Simple) Single-argument constructors should be declared `explicit`. Good single argument non-`explicit` constructors are rare in most code based. Warn for all that are not on a "positive list".
+(简单) 只有一个参数的构造函数应该声明为`explicit`，在大部分的代码库中能将单参数的构造函数声明为非`explicit`的参数很少见。警告所有不在"白名单"上的(隐式单参数构造函数)。
 
-### <a name="Rc-order"></a>C.47: Define and initialize member variables in the order of member declaration
+### <a name="Rc-order"></a>C.47: 按成员声明的顺序定义和初始化成员变量
 
 ##### Reason
 
-To minimize confusion and errors. That is the order in which the initialization happens (independent of the order of member initializers).
+尽量减少混淆和错误，这是初始化执行的顺序(独立于成员初始化器的顺序)。
 
-##### Example, bad
+##### 糟糕的例子
 
     class Foo {
         int m1;
         int m2;
     public:
-        Foo(int x) :m2{x}, m1{++x} { }   // BAD: misleading initializer order
+        Foo(int x) :m2{x}, m1{++x} { }   // BAD: 误导性的初始化顺序
         // ...
     };
 
-    Foo x(1); // surprise: x.m1 == x.m2 == 2
+    Foo x(1); // 惊不惊奇: x.m1 == x.m2 == 2 
 
 ##### Enforcement
 
-(Simple) A member initializer list should mention the members in the same order they are declared.
+(简单) 成员初始化列表应该按照声明成员的顺序列出成员。
 
 **See also**: [Discussion](#Sd-order)
 
-### <a name="Rc-in-class-initializer"></a>C.48: Prefer in-class initializers to member initializers in constructors for constant initializers
+### <a name="Rc-in-class-initializer"></a>C.48: 对于常量初始化，优先使用类内初始化器，而不是成员初始化器
 
 ##### Reason
 
-Makes it explicit that the same value is expected to be used in all constructors. Avoids repetition. Avoids maintenance problems. It leads to the shortest and most efficient code.
+明确希望在所有的构造函数中使用相同的值；避免重复；避免维护性问题。这会带来简短高效的代码。
 
-##### Example, bad
+##### 糟糕的例子
 
     class X {   // BAD
         int i;
         string s;
         int j;
     public:
-        X() :i{666}, s{"qqq"} { }   // j is uninitialized
-        X(int ii) :i{ii} {}         // s is "" and j is uninitialized
+        X() :i{666}, s{"qqq"} { }   // j 是未初始化 
+        X(int ii) :i{ii} {}         // s 是 ""， j 是未初始化 
         // ...
     };
 
-How would a maintainer know whether `j` was deliberately uninitialized (probably a poor idea anyway) and whether it was intentional to give `s` the default value `""` in one case and `qqq` in another (almost certainly a bug)? The problem with `j` (forgetting to initialize a member) often happens when a new member is added to an existing class.
+维护者怎么知道`j`是不是故意未初始化的(无论如何都是一个糟糕的idea)，以及是否有意在一种情况下给`s`默认值为`""`，而另一种情况下则是`qqq`(几乎确定是一个bug)？`j`的问题(忘记初始化)经常发生在将新成员添加到现有类时。
 
 ##### Example
 
@@ -5239,40 +5238,40 @@ How would a maintainer know whether `j` was deliberately uninitialized (probably
         string s {"qqq"};
         int j {0};
     public:
-        X2() = default;        // all members are initialized to their defaults
-        X2(int ii) :i{ii} {}   // s and j initialized to their defaults
+        X2() = default;        // 所有成员变量被初始化成各自的默认值
+        X2(int ii) :i{ii} {}   // s和j初始化成各自的默认值
         // ...
     };
 
-**Alternative**: We can get part of the benefits from default arguments to constructors, and that is not uncommon in older code. However, that is less explicit, causes more arguments to be passed, and is repetitive when there is more than one constructor:
+**可选方案**: 我们可以从带默认参数的构造函数中得到部分收益，这在旧代码中并不少见。但是，这种方法不太明确，会导致传递更多的参数，而且当有多个构造函数时会有重复:
 
-    class X3 {   // BAD: inexplicit, argument passing overhead
+    class X3 {   // BAD: 不明确，和参数传递的开销
         int i;
         string s;
         int j;
     public:
         X3(int ii = 666, const string& ss = "qqq", int jj = 0)
-            :i{ii}, s{ss}, j{jj} { }   // all members are initialized to their defaults
+            :i{ii}, s{ss}, j{jj} { }   // 所有成员变量被初始化成各自的默认值
         // ...
     };
 
 ##### Enforcement
 
-* (Simple) Every constructor should initialize every member variable (either explicitly, via a delegating ctor call or via default construction).
-* (Simple) Default arguments to constructors suggest an in-class initializer may be more appropriate.
+* (简单) 每个构造函数都应当初始化每个成员变量(要么通过显式的委托构造函数调用，要么通过默认构造(类内初始化器))。
+* (简单) 构造函数的默认参数表明类内初始化器可能更合适。
 
-### <a name="Rc-initialize"></a>C.49: Prefer initialization to assignment in constructors
+### <a name="Rc-initialize"></a>C.49: 在构造函数中，相比于赋值，优先使用初始化
 
 ##### Reason
 
-An initialization explicitly states that initialization, rather than assignment, is done and can be more elegant and efficient. Prevents "use before set" errors.
+显式的初始化表明这是一个初始化，而不是赋值，这样做可以更加优雅而高效，也可以防止“设置前使用”的错误。
 
 ##### Example, good
 
     class A {   // Good
         string s1;
     public:
-        A(czstring p) : s1{p} { }    // GOOD: directly construct (and the C-string is explicitly named)
+        A(czstring p) : s1{p} { }    // GOOD: 直接构造(显式的命名C字符串) (and the C-string is explicitly named)
         // ...
     };
 
@@ -5281,47 +5280,46 @@ An initialization explicitly states that initialization, rather than assignment,
     class B {   // BAD
         string s1;
     public:
-        B(const char* p) { s1 = p; }   // BAD: default constructor followed by assignment
+        B(const char* p) { s1 = p; }   // BAD: 默认构造函数之后跟了赋值操作
         // ...
     };
 
-    class C {   // UGLY, aka very bad
+    class C {   // 丑陋的，也就是说很糟糕
         int* p;
     public:
-        C() { cout << *p; p = new int{10}; }   // accidental use before initialized
+        C() { cout << *p; p = new int{10}; }   // 初始化前的意外使用
         // ...
     };
 
-##### Example, better still
+##### 更好的示例
 
-Instead of those `const char*`s we could use `gsl::string_span or (in C++17) `std::string_view`
-as [a more general way to present arguments to a function](#Rstr-view):
+我们可以使用`gsl::string_span`或(在C++17中)`std::string_view`来代替那些`const char*`，例如，[一种表示函数参数的更通用方法](#Rstr-view)：
 
     class D {   // Good
         string s1;
     public:
-        A(string_view v) : s1{v} { }    // GOOD: directly construct
+        A(string_view v) : s1{v} { }    // GOOD: 直接构造
         // ...
     };
 
-### <a name="Rc-factory"></a>C.50: Use a factory function if you need "virtual behavior" during initialization
+### <a name="Rc-factory"></a>C.50: 使用工厂方法，如果在初始化过程中需要“虚拟的行为”
 
 ##### Reason
 
-If the state of a base class object must depend on the state of a derived part of the object, we need to use a virtual function (or equivalent) while minimizing the window of opportunity to misuse an imperfectly constructed object.
+如果一个基类对象的状态依赖于部分派生类对象的状态，我们需要使用虚函数(或等价的)，同时最小化错误使用未构造完整的对象的机会窗口。
 
 ##### Note
 
-The return type of the factory should normally be `unique_ptr` by default; if some uses are shared, the caller can `move` the `unique_ptr` into a `shared_ptr`. However, if the factory author knows that all uses of the returned object will be shared uses, return `shared_ptr` and use `make_shared` in the body to save an allocation.
+通常默认的工厂返回类型是`unique_ptr`；如果某些使用是共享的(shared)，调用者可以将`unique_ptr`移动到`shared_ptr`中。然而，如果工厂的作者知道返回对象的所有使用都是共享的，那么在函数体中使用并返回`shared_ptr`来节省一个分配。
 
-##### Example, bad
+##### 糟糕的示例
 
     class B {
     public:
         B()
         {
             // ...
-            f();   // BAD: virtual call in constructor
+            f();   // BAD: 在构造函数中调用虚函数
             // ...
         }
 
@@ -6999,7 +6997,7 @@ Consider making such a class a `struct` -- that is, a behaviorless bunch of vari
         int y {0};
     };
 
-Note that we can put default initializers on member variables: [C.49: Prefer initialization to assignment in constructors](#Rc-initialize).
+Note that we can put default initializers on member variables: [C.49: 在构造函数中，相比于赋值，优先使用初始化](#Rc-initialize).
 
 ##### Note
 
@@ -21054,7 +21052,7 @@ Modernization can be much faster, simpler, and safer when supported with analysi
 This section contains follow-up material on rules and sets of rules.
 In particular, here we present further rationale, longer examples, and discussions of alternatives.
 
-### <a name="Sd-order"></a>Discussion: Define and initialize member variables in the order of member declaration
+### <a name="Sd-order"></a>Discussion: 按成员声明的顺序定义和初始化成员变量
 
 Member variables are always initialized in the order they are declared in the class definition, so write them in that order in the constructor initialization list. Writing them in a different order just makes the code confusing because it won't run in the order you see, and that can make it hard to see order-dependent bugs.
 
@@ -21084,7 +21082,7 @@ If the class definition and the constructor body are in separate files, the long
 
 ???
 
-### <a name="Sd-factory"></a>Discussion: Use a factory function if you need "virtual behavior" during initialization
+### <a name="Sd-factory"></a>Discussion: 使用工厂方法，如果在初始化过程中需要“虚拟的行为”
 
 If your design wants virtual dispatch into a derived class from a base class constructor or destructor for functions like `f` and `g`, you need other techniques, such as a post-constructor -- a separate member function the caller must invoke to complete initialization, which can safely call `f` and `g` because in member functions virtual calls behave normally. Some techniques for this are shown in the References. Here's a non-exhaustive list of options:
 
