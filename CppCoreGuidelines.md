@@ -4217,17 +4217,17 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.48: 对于常量初始化，优先使用类内初始化器，而不是成员初始化器](#Rc-in-class-initializer)
 * [C.49: 在构造函数中，相比于赋值，优先使用初始化](#Rc-initialize)
 * [C.50: 使用工厂方法，如果在初始化过程中需要“虚拟的行为”](#Rc-factory)
-* [C.51: Use delegating constructors to represent common actions for all constructors of a class](#Rc-delegating)
-* [C.52: Use inheriting constructors to import constructors into a derived class that does not need further explicit initialization](#Rc-inheriting)
+* [C.51: 使用委托构造函数来表示类中所有构造函数的公共行为](#Rc-delegating)
+* [C.52: 使用`继承构造函数`将构造函数导入不需要再次显式初始化的派生类](#Rc-inheriting)
 
-Copy and move rules:
+拷贝和移动规则:
 
-* [C.60: Make copy assignment non-`virtual`, take the parameter by `const&`, and return by non-`const&`](#Rc-copy-assignment)
-* [C.61: A copy operation should copy](#Rc-copy-semantic)
-* [C.62: Make copy assignment safe for self-assignment](#Rc-copy-self)
-* [C.63: Make move assignment non-`virtual`, take the parameter by `&&`, and return by non-`const&`](#Rc-move-assignment)
-* [C.64: A move operation should move and leave its source in a valid state](#Rc-move-semantic)
-* [C.65: Make move assignment safe for self-assignment](#Rc-move-self)
+* [C.60: 让拷贝赋值是非虚拟的，参数为`const &`，返回非`const &`](#Rc-copy-assignment)
+* [C.61: 拷贝操作应当拷贝](#Rc-copy-semantic)
+* [C.62: 让拷贝赋值对自赋值是安全的](#Rc-copy-self)
+* [C.63: 让移动赋值是非虚拟的，参数为`&&`，返回非`const &`](#Rc-move-assignment)
+* [C.64: 移动操作应该移动源对象，并让源对象处于有效状态](#Rc-move-semantic)
+* [C.65: 让移动赋值对自赋值是安全的](#Rc-move-self)
 * [C.66: Make move operations `noexcept`](#Rc-move-noexcept)
 * [C.67: A polymorphic class should suppress copying](#Rc-copy-virtual)
 
@@ -5332,12 +5332,12 @@ For example, `Vector0<int> v[100]` costs 100 allocations. -->
 
     class B {
     protected:
-        B() { /* ... */ }              // create an imperfectly initialized object
+        B() { /* ... */ }              // 创建一个没有完全初始化的对象
 
-        virtual void PostInitialize()  // to be called right after construction
+        virtual void PostInitialize()  // 对象构造完成后立即调用
         {
             // ...
-            f();    // GOOD: virtual dispatch is safe
+            f();    // GOOD: 虚拟调度是安全的
             // ...
         }
 
@@ -5345,7 +5345,7 @@ For example, `Vector0<int> v[100]` costs 100 allocations. -->
         virtual void f() = 0;
 
         template<class T>
-        static shared_ptr<T> Create()  // interface for creating shared objects
+        static shared_ptr<T> Create()  // 创建共享对象的接口
         {
             auto p = make_shared<T>();
             p->PostInitialize();
@@ -5353,28 +5353,28 @@ For example, `Vector0<int> v[100]` costs 100 allocations. -->
         }
     };
 
-    class D : public B { /* ... */ };  // some derived class
+    class D : public B { /* ... */ };  // 某些派生类
 
-    shared_ptr<D> p = D::Create<D>();  // creating a D object
+    shared_ptr<D> p = D::Create<D>();  // 创建一个类型为D的对象
 
-By making the constructor `protected` we avoid an incompletely constructed object escaping into the wild.
-By providing the factory function `Create()`, we make construction (on the free store) convenient.
+通过将构造函数设置为`protected`，我们避免了未构造完全的对象逃逸到“野外”*(译注：也指调用者空间)*。
+通过提供工厂方法`Create()`，我们(在自由存储区上)创建对象变得方便。
 
 ##### Note
 
-Conventional factory functions allocate on the free store, rather than on the stack or in an enclosing object.
+传统的工厂方法在自由存储区(堆内存)中分配，而不是在栈上或封闭对象中分配。
 
-**See also**: [Discussion](#Sd-factory)
+**也见**: [讨论](#Sd-factory)
 
-### <a name="Rc-delegating"></a>C.51: Use delegating constructors to represent common actions for all constructors of a class
+### <a name="Rc-delegating"></a>C.51: 使用委托构造函数来表示类中所有构造函数的公共行为
 
 ##### Reason
 
-To avoid repetition and accidental differences.
+避免重复和意外的不同。
 
-##### Example, bad
+##### 糟糕的例子
 
-    class Date {   // BAD: repetitive
+    class Date {   // BAD: 重复
         int d;
         Month m;
         int y;
@@ -5389,7 +5389,7 @@ To avoid repetition and accidental differences.
         // ...
     };
 
-The common action gets tedious to write and may accidentally not be common.
+公共的操作编写起来很乏味，而且可能意外的不一致。
 
 ##### Example
 
@@ -5407,33 +5407,33 @@ The common action gets tedious to write and may accidentally not be common.
         // ...
     };
 
-**See also**: If the "repeated action" is a simple initialization, consider [an in-class member initializer](#Rc-in-class-initializer).
+**参见**: 如果“重复的行为”是简单的初始化，考虑[类内初始化器](#Rc-in-class-initializer)。
 
 ##### Enforcement
 
-(Moderate) Look for similar constructor bodies.
+(中等难度) 寻找具有相似函数体的构造函数。
 
-### <a name="Rc-inheriting"></a>C.52: Use inheriting constructors to import constructors into a derived class that does not need further explicit initialization
+### <a name="Rc-inheriting"></a>C.52: 使用`继承构造函数`将构造函数导入不需要再次显式初始化的派生类
 
 ##### Reason
 
-If you need those constructors for a derived class, re-implementing them is tedious and error-prone.
+如果你需要在派生类中使用这些构建函数，重新实现它们是乏味而易于出错的。
 
 ##### Example
 
-`std::vector` has a lot of tricky constructors, so if I want my own `vector`, I don't want to reimplement them:
+`std::vector`有很多微妙的(tricky)的构造函数，所以如果我想要自己的`vector`，但我不想重新实现它们：
 
     class Rec {
-        // ... data and lots of nice constructors ...
+        // ... 数据和很多良好的构造函数 ...
     };
 
     class Oper : public Rec {
         using Rec::Rec;
-        // ... no data members ...
-        // ... lots of nice utility functions ...
+        // ... 没有数据成员 ...
+        // ... 很多很好的实用函数 ...
     };
 
-##### Example, bad
+##### 糟糕的例子
 
     struct Rec2 : public Rec {
         int x;
@@ -5441,23 +5441,23 @@ If you need those constructors for a derived class, re-implementing them is tedi
     };
 
     Rec2 r {"foo", 7};
-    int val = r.x;   // uninitialized
+    int val = r.x;   // 未初始化
 
 ##### Enforcement
 
-Make sure that every member of the derived class is initialized.
+确保派生类中的每个成员都被初始化。
 
-## <a name="SS-copy"></a>C.copy: Copy and move
+## <a name="SS-copy"></a>C.copy: 拷贝和移动
 
-Value types should generally be copyable, but interfaces in a class hierarchy should not.
-Resource handles may or may not be copyable.
-Types can be defined to move for logical as well as performance reasons.
+值类型通常是可以拷贝的，但类层次结构中的接口应当不能拷贝。
+资源句柄即可能是能拷贝的，也可能是不能拷贝的。
+出于逻辑和性能的资源，类型可以被定义成可移动的。
 
-### <a name="Rc-copy-assignment"></a>C.60: Make copy assignment non-`virtual`, take the parameter by `const&`, and return by non-`const&`
+### <a name="Rc-copy-assignment"></a>C.60: 让拷贝赋值是非虚拟的，参数为`const &`，返回非`const &`
 
 ##### Reason
 
-It is simple and efficient. If you want to optimize for rvalues, provide an overload that takes a `&&` (see [F.18](#Rf-consume)).
+这简单而高效，如果你想对右值(rvalue)进行优化，提供一个接受`&&`参数的重载(见[F.18](#Rf-consume))。
 
 ##### Example
 
@@ -5465,9 +5465,9 @@ It is simple and efficient. If you want to optimize for rvalues, provide an over
     public:
         Foo& operator=(const Foo& x)
         {
-            // GOOD: no need to check for self-assignment (other than performance)
+            // GOOD: 无需检查自赋值(除了性能的考虑外)
             auto tmp = x;
-            swap(tmp); // see C.83
+            swap(tmp); // 参见 C.83
             return *this;
         }
         // ...
@@ -5477,16 +5477,16 @@ It is simple and efficient. If you want to optimize for rvalues, provide an over
     Foo b;
     Foo f();
 
-    a = b;    // assign lvalue: copy
-    a = f();  // assign rvalue: potentially move
+    a = b;    // 左值赋值：拷贝
+    a = f();  // 右值赋值：潜在的移动
 
 ##### Note
 
-The `swap` implementation technique offers the [strong guarantee](#Abrahams01).
+`swap`的实现技术提供了*强保证*(参见[strong guarantee](#Abrahams01))。
 
 ##### Example
 
-But what if you can get significantly better performance by not making a temporary copy? Consider a simple `Vector` intended for a domain where assignment of large, equal-sized `Vector`s is common. In this case, the copy of elements implied by the `swap` implementation technique could cause an order of magnitude increase in cost:
+但是，如果可以通过不创建临时副本来获得更好的性能，又会怎样呢？考虑一个简单的`Vector`适用的领域，在该领域分配尺寸相同的大型`Vector`是常见的。在这种情况下，`swap`的实现技术所隐含的元素的拷贝可能会导致成本增加一个数量级:
 
     template<typename T>
     class Vector {
@@ -5501,42 +5501,40 @@ But what if you can get significantly better performance by not making a tempora
     Vector& Vector::operator=(const Vector& a)
     {
         if (a.sz > sz) {
-            // ... use the swap technique, it can't be bettered ...
+            // ... 使用swap的技术，也不会更好 ...
             return *this
         }
-        // ... copy sz elements from *a.elem to elem ...
+        // ...  中*a.elem中拷贝sz个元素到elem ...
         if (a.sz < sz) {
-            // ... destroy the surplus elements in *this* and adjust size ...
+            // ... 销毁this中多余的元素，然后调整大小 ...
         }
         return *this;
     }
 
-By writing directly to the target elements, we will get only [the basic guarantee](#Abrahams01) rather than the strong guarantee offered by the `swap` technique. Beware of [self-assignment](#Rc-copy-self).
+通过直接写入目标元素，我们可以获得[基本的保证](#Abrahams01)，而不是`swap`技术提供的强保证。当心[自赋值](#Rc-copy-self)。
 
-**Alternatives**: If you think you need a `virtual` assignment operator, and understand why that's deeply problematic, don't call it `operator=`. Make it a named function like `virtual void assign(const Foo&)`.
-See [copy constructor vs. `clone()`](#Rc-copy-virtual).
+**可选方案**: 如果你认为你需要一个`virtual`的赋值操作符，并且理解为什么这是一个严重的问题，不要叫称它为`operator=`，把它命名成类似`virtual void assign(const Foo&)`的函数。参见[拷贝构造函数 vs `clone()`](#Rc-copy-virtual)
 
 ##### Enforcement
 
-* (Simple) An assignment operator should not be virtual. Here be dragons!
-* (Simple) An assignment operator should return `T&` to enable chaining, not alternatives like `const T&` which interfere with composability and putting objects in containers.
-* (Moderate) An assignment operator should (implicitly or explicitly) invoke all base and member assignment operators.
-  Look at the destructor to determine if the type has pointer semantics or value semantics.
+* (简单) 赋值操作符不应该是`virtual`的，这是危险的！
+* (简单) 赋值操作符应该返回`T&`以进行链式操作(译注：如`a = b = c`)，而不是像`const T&`这样的替代方法，因为它会干扰可组合性和将对象放入容器中，*译注：这里不太理解，可能是说像A& ref = a = b会失败吧*。
+* (中等) 赋值操作符应该(隐式或显式)调用所有的基类和成员赋值操作符。查看析构函数以确定该类型是否具有指针语义或值语义。
 
-### <a name="Rc-copy-semantic"></a>C.61: A copy operation should copy
+
+### <a name="Rc-copy-semantic"></a>C.61: 拷贝操作应当拷贝
 
 ##### Reason
 
-That is the generally assumed semantics. After `x = y`, we should have `x == y`.
-After a copy `x` and `y` can be independent objects (value semantics, the way non-pointer built-in types and the standard-library types work) or refer to a shared object (pointer semantics, the way pointers work).
+这是通常假定的语义，`x = y`后应当有`x == y`。拷贝完成后，`x`和`y`可以是两个独立的对象(值语义，非指针的内置类型和标准库类型以这种方式工作)，也可以是指向一个共享对象（指针语义，指针的工作试）。
 
 ##### Example
 
-    class X {   // OK: value semantics
+    class X {   // OK: 值语义
     public:
         X();
-        X(const X&);     // copy X
-        void modify();   // change the value of X
+        X(const X&);     // 拷贝X
+        void modify();   // 改变X的值
         // ...
         ~X() { delete[] p; }
     private:
@@ -5559,16 +5557,16 @@ After a copy `x` and `y` can be independent objects (value semantics, the way no
     X y = x;
     if (x != y) throw Bad{};
     x.modify();
-    if (x == y) throw Bad{};   // assume value semantics
+    if (x == y) throw Bad{};   // 假定是值语义
 
 ##### Example
 
-    class X2 {  // OK: pointer semantics
+    class X2 {  // OK: 指针语义
     public:
         X2();
-        X2(const X2&) = default; // shallow copy
+        X2(const X2&) = default; // 浅拷贝
         ~X2() = default;
-        void modify();          // change the pointed-to value
+        void modify();          // 改变指针指向的值
         // ...
     private:
         T* p;
@@ -5584,33 +5582,33 @@ After a copy `x` and `y` can be independent objects (value semantics, the way no
     X2 y = x;
     if (x != y) throw Bad{};
     x.modify();
-    if (x != y) throw Bad{};  // assume pointer semantics
+    if (x != y) throw Bad{};  // 假定是指针语义
 
 ##### Note
 
-Prefer copy semantics unless you are building a "smart pointer". Value semantics is the simplest to reason about and what the standard-library facilities expect.
+使用值语义，除非你正在打造一个”智能指针“，值语义是标准库工具所期望的最简单的推理方法。
 
 ##### Enforcement
 
 (Not enforceable)
 
-### <a name="Rc-copy-self"></a>C.62: Make copy assignment safe for self-assignment
+### <a name="Rc-copy-self"></a>C.62: 让拷贝赋值对自赋值是安全的
 
 ##### Reason
 
-If `x = x` changes the value of `x`, people will be surprised and bad errors will occur (often including leaks).
+如果`x = x`改变了`x`的值，人们会吃惊以及可能会出现严重的错误(经常包含泄漏)。
 
 ##### Example
 
-The standard-library containers handle self-assignment elegantly and efficiently:
+标准库容器优雅而有效地处理自赋值:
 
     std::vector<int> v = {3, 1, 4, 1, 5, 9};
     v = v;
-    // the value of v is still {3, 1, 4, 1, 5, 9}
+    // v的值依然是{3, 1, 4, 1, 5, 9}
 
 ##### Note
 
-The default assignment generated from members that handle self-assignment correctly handles self-assignment.
+由能正确处理自赋值的成员生成的默认赋值来处理自赋值：
 
     struct Bar {
         vector<pair<int, int>> v;
@@ -5620,11 +5618,11 @@ The default assignment generated from members that handle self-assignment correc
 
     Bar b;
     // ...
-    b = b;   // correct and efficient
+    b = b;   // 正确而高效
 
 ##### Note
 
-You can handle self-assignment by explicitly testing for self-assignment, but often it is faster and more elegant to cope without such a test (e.g., [using `swap`](#Rc-swap)).
+可以通过显式的自赋值测试来处理自赋值，通常不进行这类检查会更加快速，更加高效（如,[使用`swap`](#Rc-swap)）。
 
     class Foo {
         string s;
@@ -5634,7 +5632,7 @@ You can handle self-assignment by explicitly testing for self-assignment, but of
         // ...
     };
 
-    Foo& Foo::operator=(const Foo& a)   // OK, but there is a cost
+    Foo& Foo::operator=(const Foo& a)   // OK, 但有一定开销
     {
         if (this == &a) return *this;
         s = a.s;
@@ -5642,55 +5640,53 @@ You can handle self-assignment by explicitly testing for self-assignment, but of
         return *this;
     }
 
-This is obviously safe and apparently efficient.
-However, what if we do one self-assignment per million assignments?
-That's about a million redundant tests (but since the answer is essentially always the same, the computer's branch predictor will guess right essentially every time).
-Consider:
+这显然是安全有效的，但是，如果我们每百万次任务中只做一次自赋值呢？这大约是一百万次冗余测试(但由于答案本质上总是相同的，计算机的分支预测器基本上每次都会猜对)。
+考虑:
 
-    Foo& Foo::operator=(const Foo& a)   // simpler, and probably much better
+    Foo& Foo::operator=(const Foo& a)   // 更简单，可能也更好
     {
         s = a.s;
         i = a.i;
         return *this;
     }
 
-`std::string` is safe for self-assignment and so are `int`. All the cost is carried by the (rare) case of self-assignment.
+`std::string`和`int`是自赋值安全的，所有自赋值的开销都由(很少见)自赋值的案例自己处理
 
 ##### Enforcement
 
-(Simple) Assignment operators should not contain the pattern `if (this == &a) return *this;` ???
+(简单) 赋值操作符不应该包含类似`if (this == &a) return *this;`这一模式。
 
-### <a name="Rc-move-assignment"></a>C.63: Make move assignment non-`virtual`, take the parameter by `&&`, and return by non-`const &`
+### <a name="Rc-move-assignment"></a>C.63: 让移动赋值是非虚拟的，参数为`&&`，返回非`const &`
 
 ##### Reason
 
-It is simple and efficient.
+这是简单且具效率的。
 
-**See**: [The rule for copy-assignment](#Rc-copy-assignment).
+**参见**: [拷贝赋值的规则](#Rc-copy-assignment).
 
 ##### Enforcement
 
-Equivalent to what is done for [copy-assignment](#Rc-copy-assignment).
+相当于[拷贝赋值](#Rc-copy-assignment)所做的工作。
 
-* (Simple) An assignment operator should not be virtual. Here be dragons!
-* (Simple) An assignment operator should return `T&` to enable chaining, not alternatives like `const T&` which interfere with composability and putting objects in containers.
-* (Moderate) A move assignment operator should (implicitly or explicitly) invoke all base and member move assignment operators.
+* (简单) 赋值操作符不应该是`virtual`的，这是危险的！
+* (简单) 赋值操作符应该返回`T&`以进行链式操作(译注：如`a = b = c`)，而不是像`const T&`这样的替代方法，因为它会干扰可组合性和将对象放入容器中，*译注：这里不太理解，可能是说像A& ref = a = b会失败吧*。
+* (中等) 赋值操作符应该(隐式或显式)调用所有的基类和成员赋值操作符。
 
-### <a name="Rc-move-semantic"></a>C.64: A move operation should move and leave its source in a valid state
+### <a name="Rc-move-semantic"></a>C.64: 移动操作应该移动源对象，并让源对象处于有效状态
 
 ##### Reason
 
-That is the generally assumed semantics.
-After `y = std::move(x)` the value of `y` should be the value `x` had and `x` should be in a valid state.
+这是通常假定的语义。
+`y = std::move(x)`之后，`y`应该有`x`的值，并且`x`应该处于有效状态。
 
 ##### Example
 
     template<typename T>
-    class X {   // OK: value semantics
+    class X {   // OK: 值语义
     public:
         X();
-        X(X&& a) noexcept;  // move X
-        void modify();     // change the value of X
+        X(X&& a) noexcept;  // 移动 X
+        void modify();     // 改变 X 的值
         // ...
         ~X() { delete[] p; }
     private:
@@ -5700,9 +5696,9 @@ After `y = std::move(x)` the value of `y` should be the value `x` had and `x` sh
 
 
     X::X(X&& a)
-        :p{a.p}, sz{a.sz}  // steal representation
+        :p{a.p}, sz{a.sz}  // 偷走的表示
     {
-        a.p = nullptr;     // set to "empty"
+        a.p = nullptr;     // 设置”空“
         a.sz = 0;
     }
 
@@ -5712,30 +5708,30 @@ After `y = std::move(x)` the value of `y` should be the value `x` had and `x` sh
         // ...
         X y = std::move(x);
         x = X{};   // OK
-    } // OK: x can be destroyed
+    } // OK: x可以被销毁
 
 ##### Note
 
-Ideally, that moved-from should be the default value of the type.
-Ensure that unless there is an exceptionally good reason not to.
-However, not all types have a default value and for some types establishing the default value can be expensive.
-The standard requires only that the moved-from object can be destroyed.
-Often, we can easily and cheaply do better: The standard library assumes that it is possible to assign to a moved-from object.
-Always leave the moved-from object in some (necessarily specified) valid state.
+理想情况下，被移动的对象应当处于默认值状态，除非确定有不这样做的正当理由。
+然而，并不是所有类型都有默认值，以及有些类型建立默认值可能是很费的。
+标准仅仅要求被移动的对象可以被销毁。
+通常，我们可以简单而廉价地做到更好：标准库假定它可以赋值给一个已经被移走的对象，总是让被移走对象处在一些(有必要指定的)合法状态。
 
 ##### Note
 
-Unless there is an exceptionally strong reason not to, make `x = std::move(y); y = z;` work with the conventional semantics.
+除非有非常充分的理由，否则让`x = std::move(y); y = z;`以传统语义的方式进行工作。
 
 ##### Enforcement
 
 (Not enforceable) Look for assignments to members in the move operation. If there is a default constructor, compare those assignments to the initializations in the default constructor.
 
-### <a name="Rc-move-self"></a>C.65: Make move assignment safe for self-assignment
+(不可强制执行) 在移动操作中查看成员变量的赋值操作，如果有默认构造函数，比较这些赋值与在构造函数中的初始化。*(译注：主要是查看被移走的对象的状态与其默认初始化状态是否一致)*
+
+### <a name="Rc-move-self"></a>C.65: 让移动赋值对自赋值是安全的
 
 ##### Reason
 
-If `x = x` changes the value of `x`, people will be surprised and bad errors may occur. However, people don't usually directly write a self-assignment that turn into a move, but it can occur. However, `std::swap` is implemented using move operations so if you accidentally do `swap(a, b)` where `a` and `b` refer to the same object, failing to handle self-move could be a serious and subtle error.
+如果`x = x`改变了`x`的值，人们会感到吃惊，也可能会产生严重的错误。通常人们不会直接写一个自赋值的移动，但这是有可能发生的。然而，`std::swap`的实现是使用移动的，所以如果你意外对引用了相同对象的`a`和`b`做了`swap(a, b)`，没能正确处理自移动可能是严重且微妙的错误。
 
 ##### Example
 
@@ -5747,29 +5743,29 @@ If `x = x` changes the value of `x`, people will be surprised and bad errors may
         // ...
     };
 
-    Foo& Foo::operator=(Foo&& a) noexcept  // OK, but there is a cost
+    Foo& Foo::operator=(Foo&& a) noexcept  // 没有问题，但是有一定的开销
     {
-        if (this == &a) return *this;  // this line is redundant
+        if (this == &a) return *this;  // 本行是冗余的
         s = std::move(a.s);
         i = a.i;
         return *this;
     }
 
-The one-in-a-million argument against `if (this == &a) return *this;` tests from the discussion of [self-assignment](#Rc-copy-self) is even more relevant for self-move.
+百万分之一的参数违反[自赋值](#Rc-copy-self)讨论中的`if (this == &a) return *this;`测试，对自移动(self-move)甚至是更中肯的。
 
 ##### Note
 
-There is no known general way of avoiding an `if (this == &a) return *this;` test for a move assignment and still get a correct answer (i.e., after `x = x` the value of `x` is unchanged).
+对移动赋值来说，没有已知通用的方法即能避免`if (this == &a) return *this;`测试，又能得到正确结果，(例如，`x = x`之后`x`是没有改变的)。
 
 ##### Note
 
-The ISO standard guarantees only a "valid but unspecified" state for the standard-library containers. Apparently this has not been a problem in about 10 years of experimental and production use. Please contact the editors if you find a counter example. The rule here is more caution and insists on complete safety.
+ISO标准只保证了标准库容器的”有效但未指定的“状态。显然，在近10年的试验和生产使用中，这并不是一个问题，如果你发现了一个反例，请联系编者。这里的规则更加谨慎，坚持完全的安全。
 
 ##### Example
 
-Here is a way to move a pointer without a test (imagine it as code in the implementation a move assignment):
+这里有一种不需要测试就可以移动指针的方法(想象它是实现移动赋值的代码)：
 
-    // move from other.ptr to this->ptr
+    // 从 other.ptr 移动到 this->ptr
     T* temp = other.ptr;
     other.ptr = nullptr;
     delete ptr;
@@ -5779,6 +5775,9 @@ Here is a way to move a pointer without a test (imagine it as code in the implem
 
 * (Moderate) In the case of self-assignment, a move assignment operator should not leave the object holding pointer members that have been `delete`d or set to `nullptr`.
 * (Not enforceable) Look at the use of standard-library container types (incl. `string`) and consider them safe for ordinary (not life-critical) uses.
+
+<!-- * (适中) 在自赋值的情况下，移动赋值操作符不应该让对象持有已被`delete`或设置为`nullptr`的指针成员。
+* (不可强制执行) 看看使用标准库容器类型(包括`string`)，并认为它们对于普通用途(而不是对生命至关重要的用途)是安全的。 -->
 
 ### <a name="Rc-move-noexcept"></a>C.66: Make move operations `noexcept`
 
