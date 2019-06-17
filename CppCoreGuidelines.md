@@ -6233,12 +6233,12 @@ ISO标准只保证了标准库容器的”有效但未指定的“状态。显�
 容器的规则概述：
 
 * [C.100: 当定义一个容器时，遵循STL](#Rcon-stl)
-* [C.101: Give a container value semantics](#Rcon-val)
-* [C.102: Give a container move operations](#Rcon-move)
-* [C.103: Give a container an initializer list constructor](#Rcon-init)
-* [C.104: Give a container a default constructor that sets it to empty](#Rcon-empty)
+* [C.101: 给予容器值语义](#Rcon-val)
+* [C.102: 给予容器移动操作](#Rcon-move)
+* [C.103: 给容器一个initializer_list构造函数](#Rcon-init)
+* [C.104: 给容器一个设置为空的默认构造函数](#Rcon-empty)
 * ???
-* [C.109: If a resource handle has pointer semantics, provide `*` and `->`](#Rcon-ptr)
+* [C.109: 提升`*`和`->`，如果资源句柄具有指针语义](#Rcon-ptr)
 
 **参见**: [Resources](#S-resource)
 
@@ -6251,27 +6251,26 @@ STL容器对大多数C++程序员来说都很熟悉，并且是一种基本可�
 
 ##### Note
 
-There are of course other fundamentally sound design styles and sometimes reasons to depart from
-the style of the standard library, but in the absence of a solid reason to differ, it is simpler
-and easier for both implementers and users to follow the standard.
+当然有其它基本可靠的设计风格，有时有理由来违反标准库的设计风格，但在缺乏足够坚实的理由来制造差别，遵循标准对实现者和使用者都更简洁和容易。
 
-In particular, `std::vector` and `std::map` provide useful relatively simple models.
+尤其是，`std::vector`和`std::map`提供了实用的相关的简单模型。
+
 
 ##### Example
 
-    // simplified (e.g., no allocators):
+    // 简化的 (例如，没有分配器):
 
     template<typename T>
     class Sorted_vector {
         using value_type = T;
-        // ... iterator types ...
+        // ... 迭代器类型 ...
 
         Sorted_vector() = default;
-        Sorted_vector(initializer_list<T>);    // initializer-list constructor: sort and store
+        Sorted_vector(initializer_list<T>);    // initializer_list构造函数：sort和store
         Sorted_vector(const Sorted_vector&) = default;
         Sorted_vector(Sorted_vector&&) = default;
-        Sorted_vector& operator=(const Sorted_vector&) = default;   // copy assignment
-        Sorted_vector& operator=(Sorted_vector&&) = default;        // move assignment
+        Sorted_vector& operator=(const Sorted_vector&) = default;   // 拷贝赋值
+        Sorted_vector& operator=(Sorted_vector&&) = default;        // 移动赋值
         ~Sorted_vector() = default;
 
         Sorted_vector(const std::vector<T>& v);   // store and sort
@@ -6292,29 +6291,23 @@ In particular, `std::vector` and `std::map` provide useful relatively simple mod
     template<typename T> bool operator!=(const Sorted_vector<T>&, const Sorted_vector<T>&);
     // ...
 
-Here, the STL style is followed, but incompletely.
-That's not uncommon.
-Provide only as much functionality as makes sense for a specific container.
-The key is to define the conventional constructors, assignments, destructors, and iterators
-(as meaningful for the specific container) with their conventional semantics.
-From that base, the container can be expanded as needed.
-Here, special constructors from `std::vector` were added.
+这里，遵循了STL风格，但并不完整，这是常见的。
+`Sorted_vector`只提供了尽可能多功能的指定容器，这里的关键是根据传统的语义定义符合传统的构造函数，赋值，析构函数和迭代器(作为有意义的特定的容器)。
+以此为基础，该容器可以按需要扩展，例如，添加了从`std::vector`进行构造的特殊构造函数。
 
 ##### Enforcement
 
 ???
 
-### <a name="Rcon-val"></a>C.101: Give a container value semantics
+### <a name="Rcon-val"></a>C.101: 给予容器值语义
 
 ##### Reason
 
-Regular objects are simpler to think and reason about than irregular ones.
-Familiarity.
+普通类型比非普通类型易于思考和推理。
 
 ##### Note
 
-If meaningful, make a container `Regular` (the concept).
-In particular, ensure that an object compares equal to its copy.
+如果有意义，让容器是`Regular`(概念)的，尤其是要确保与它的拷贝是比较相等的。
 
 ##### Example
 
@@ -6330,65 +6323,61 @@ In particular, ensure that an object compares equal to its copy.
 
 ???
 
-### <a name="Rcon-move"></a>C.102: Give a container move operations
+### <a name="Rcon-move"></a>C.102: 给予容器移动操作
 
 ##### Reason
 
-Containers tend to get large; without a move constructor and a copy constructor an object can be
-expensive to move around, thus tempting people to pass pointers to it around and getting into
-resource management problems.
+容器容易变得很大；缺乏移动构造函数和拷贝构造函数，一个对象的转移可能是很费的，因此人们会很容易到处传递指针，这会带来资源管理的问题。
 
 ##### Example
 
     Sorted_vector<int> read_sorted(istream& is)
     {
         vector<int> v;
-        cin >> v;   // assume we have a read operation for vectors
-        Sorted_vector<int> sv = v;  // sorts
+        cin >> v;   // 假定我们有一个给vector的读操作。
+        Sorted_vector<int> sv = v;  // 排序
         return sv;
     }
 
-    A user can reasonably assume that returning a standard-like container is cheap.
+用户可以合理地假定返回一个标准类似的容器是廉价的。
 
 ##### Enforcement
 
 ???
 
-### <a name="Rcon-init"></a>C.103: Give a container an initializer list constructor
+### <a name="Rcon-init"></a>C.103: 给容器一个initializer_list构造函数
 
 ##### Reason
 
-People expect to be able to initialize a container with a set of values.
-Familiarity.
+人们希望能使用集合来初始化一个容器，这是常见的。
 
 ##### Example
 
-    Sorted_vector<int> sv {1, 3, -1, 7, 0, 0}; // Sorted_vector sorts elements as needed
+    Sorted_vector<int> sv {1, 3, -1, 7, 0, 0}; // Sorted_vector sorts elements as needed 
 
 ##### Enforcement
 
 ???
 
-### <a name="Rcon-empty"></a>C.104: Give a container a default constructor that sets it to empty
+### <a name="Rcon-empty"></a>C.104: 给容器一个设置为空的默认构造函数
 
 ##### Reason
 
-To make it `Regular`.
+来让它`Regular`。
 
 ##### Example
 
-    vector<Sorted_sequence<string>> vs(100);    // 100 Sorted_sequences each with the value ""
+    vector<Sorted_sequence<string>> vs(100);    // 100个值为""的Sorted_sequences
 
 ##### Enforcement
 
 ???
 
-### <a name="Rcon-ptr"></a>C.109: If a resource handle has pointer semantics, provide `*` and `->`
+### <a name="Rcon-ptr"></a>C.109: 提升`*`和`->`，如果资源句柄具有指针语义
 
 ##### Reason
 
-That's what is expected from pointers.
-Familiarity.
+这是指针所期望的，是常见的。
 
 ##### Example
 
