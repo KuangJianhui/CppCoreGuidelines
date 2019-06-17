@@ -4228,20 +4228,20 @@ C++内置类型是常规的，标准库类也是常规的，比如`string`、`ve
 * [C.63: 让移动赋值是非虚拟的，参数为`&&`，返回非`const &`](#Rc-move-assignment)
 * [C.64: 移动操作应该移动源对象，并让源对象处于有效状态](#Rc-move-semantic)
 * [C.65: 让移动赋值对自赋值是安全的](#Rc-move-self)
-* [C.66: Make move operations `noexcept`](#Rc-move-noexcept)
-* [C.67: A polymorphic class should suppress copying](#Rc-copy-virtual)
+* [C.66: 让移动操作是`noexcept`的](#Rc-move-noexcept)
+* [C.67: 多态的类应当禁止拷贝](#Rc-copy-virtual)
 
 Other default operations rules:
 
-* [C.80: Use `=default` if you have to be explicit about using the default semantics](#Rc-eqdefault)
-* [C.81: Use `=delete` when you want to disable default behavior (without wanting an alternative)](#Rc-delete)
-* [C.82: Don't call virtual functions in constructors and destructors](#Rc-ctor-virtual)
-* [C.83: For value-like types, consider providing a `noexcept` swap function](#Rc-swap)
-* [C.84: A `swap` may not fail](#Rc-swap-fail)
-* [C.85: Make `swap` `noexcept`](#Rc-swap-noexcept)
-* [C.86: Make `==` symmetric with respect of operand types and `noexcept`](#Rc-eq)
-* [C.87: Beware of `==` on base classes](#Rc-eq-base)
-* [C.89: Make a `hash` `noexcept`](#Rc-hash)
+* [C.80: 如果必须明确使用默认语义，则使用`=default`](#Rc-eqdefault)
+* [C.81: 如果你不想要默认行为(不需要其他选择)，使用`= delete`](#Rc-delete)
+* [C.82: 不要在构造函数和析构函数中调用虚函数](#Rc-ctor-virtual)
+* [C.83: 对于值类型，考虑提供`noexcept`的swap函数](#Rc-swap)
+* [C.84: `swap`函数不能失败](#Rc-swap-fail)
+* [C.85: 让`swap`是`noexcept`的](#Rc-swap-noexcept)
+* [C.86: 让`==`操作数类型对称和`noexcept`](#Rc-eq)
+* [C.87: 警惕基类的`==`](#Rc-eq-base)
+* [C.89: 让`hash`函数是`noexcept`的](#Rc-hash)
 
 ## <a name="SS-defop"></a>C.defop: Default Operations
 
@@ -5773,18 +5773,15 @@ ISO标准只保证了标准库容器的”有效但未指定的“状态。显�
 
 ##### Enforcement
 
-* (Moderate) In the case of self-assignment, a move assignment operator should not leave the object holding pointer members that have been `delete`d or set to `nullptr`.
-* (Not enforceable) Look at the use of standard-library container types (incl. `string`) and consider them safe for ordinary (not life-critical) uses.
+* (适中) 在自赋值的情况下，移动赋值操作符不应该让对象持有已被`delete`或设置为`nullptr`的指针成员。
+* (不可强制执行) 看看使用标准库容器类型(包括`string`)，并认为它们对于普通用途(而不是对生命至关重要的用途)是安全的。
 
-<!-- * (适中) 在自赋值的情况下，移动赋值操作符不应该让对象持有已被`delete`或设置为`nullptr`的指针成员。
-* (不可强制执行) 看看使用标准库容器类型(包括`string`)，并认为它们对于普通用途(而不是对生命至关重要的用途)是安全的。 -->
-
-### <a name="Rc-move-noexcept"></a>C.66: Make move operations `noexcept`
+### <a name="Rc-move-noexcept"></a>C.66: 让移动操作是`noexcept`的
 
 ##### Reason
 
-A throwing move violates most people's reasonably assumptions.
-A non-throwing move will be used more efficiently by standard-library and language facilities.
+一个抛出异常的移动操作违反大多数的合理假设。
+一个不抛出异常的移动可以让标准库和语言设施更有效地使用。
 
 ##### Example
 
@@ -5799,39 +5796,39 @@ A non-throwing move will be used more efficiently by standard-library and langua
         int sz;
     };
 
-These operations do not throw.
+这些操作不抛出异常。
 
-##### Example, bad
+##### 糟糕的示例
 
     template<typename T>
     class Vector2 {
         // ...
-        Vector2(Vector2&& a) { *this = a; }             // just use the copy
-        Vector2& operator=(Vector2&& a) { *this = a; }  // just use the copy
+        Vector2(Vector2&& a) { *this = a; }             // 只使用拷贝
+        Vector2& operator=(Vector2&& a) { *this = a; }  // 只使用拷贝
         // ...
     public:
         T* elem;
         int sz;
     };
 
-This `Vector2` is not just inefficient, but since a vector copy requires allocation, it can throw.
+`Vector2`不仅是不高效的，而且由于拷贝需要分配内存，可能会抛出异常。
 
 ##### Enforcement
 
-(Simple) A move operation should be marked `noexcept`.
+(简单) 移动操作应当被标记为`noexcept`。
 
-### <a name="Rc-copy-virtual"></a>C.67: A polymorphic class should suppress copying
+### <a name="Rc-copy-virtual"></a>C.67: 多态的类应当禁止拷贝
 
 ##### Reason
 
-A *polymorphic class* is a class that defines or inherits at least one virtual function. It is likely that it will be used as a base class for other derived classes with polymorphic behavior. If it is accidentally passed by value, with the implicitly generated copy constructor and assignment, we risk slicing: only the base portion of a derived object will be copied, and the polymorphic behavior will be corrupted.
+*多态类*是定义或继承了至少一个虚函数的类，它可能会被用作具有多态行为的派生类的基类来使用。如果它意外地通过值传递，使用隐式生成的拷贝构造函数和赋值，我们将冒切分的风险：只有派生对象的基类部分被拷贝，多态行为将被破坏。
 
-##### Example, bad
+##### 糟糕的示例
 
-    class B { // BAD: polymorphic base class doesn't suppress copying
+    class B { // BAD: 多态的基类没有禁止拷贝
     public:
         virtual char m() { return 'B'; }
-        // ... nothing about copy operations, so uses default ...
+        // ... 没有拷贝操作，使用默认的 ...
     };
 
     class D : public B {
@@ -5841,7 +5838,7 @@ A *polymorphic class* is a class that defines or inherits at least one virtual f
     };
 
     void f(B& b) {
-        auto b2 = b; // oops, slices the object; b2.m() will return 'B'
+        auto b2 = b; // 哎呀，切分了对象；b2.m()会返回'B'
     }
 
     D d;
@@ -5849,7 +5846,7 @@ A *polymorphic class* is a class that defines or inherits at least one virtual f
 
 ##### Example
 
-    class B { // GOOD: polymorphic class suppresses copying
+    class B { // GOOD: 多态类禁止拷贝
     public:
         B(const B&) = delete;
         B& operator=(const B&) = delete;
@@ -5864,7 +5861,7 @@ A *polymorphic class* is a class that defines or inherits at least one virtual f
     };
 
     void f(B& b) {
-        auto b2 = b; // ok, compiler will detect inadvertent copying, and protest
+        auto b2 = b; // ok，编译器将检测到无意的拷贝，并给出编译错误
     }
 
     D d;
@@ -5872,28 +5869,26 @@ A *polymorphic class* is a class that defines or inherits at least one virtual f
 
 ##### Note
 
-If you need to create deep copies of polymorphic objects, use `clone()` functions: see [C.130](#Rh-copy).
+如果你需要创建一个多态对象的深拷贝，使用`clone()`方法：参见[C.130](#Rh-copy)。
 
-##### Exception
+##### 例外
 
-Classes that represent exception objects need both to be polymorphic and copy-constructible.
+表示异常对象的类同时需要多态和拷贝构造。
 
 ##### Enforcement
 
-* Flag a polymorphic class with a non-deleted copy operation.
-* Flag an assignment of polymorphic class objects.
+* 标出没将拷贝操作设置为`deleted`的多态类。
+* 标出多太类对象的赋值。
 
-## C.other: Other default operation rules
+## C.other: 其他默认操作规则
 
-In addition to the operations for which the language offer default implementations,
-there are a few operations that are so foundational that it rules for their definition are needed:
-comparisons, `swap`, and `hash`.
+除了语言提供默认实现的操作之外，有一些操作是如此基础，以至于需要一些规则来定义它们：比较、`swap`和`hash`。
 
-### <a name="Rc-eqdefault"></a>C.80: Use `=default` if you have to be explicit about using the default semantics
+### <a name="Rc-eqdefault"></a>C.80: 如果必须明确使用默认语义，则使用`=default`
 
 ##### Reason
 
-The compiler is more likely to get the default semantics right and you cannot implement these functions better than the compiler.
+编译器更有可能获得正确的默认语义，您不会比编译器更好地实现这些函数。
 
 ##### Example
 
@@ -5909,9 +5904,9 @@ The compiler is more likely to get the default semantics right and you cannot im
         Tracer& operator=(Tracer&&) = default;
     };
 
-Because we defined the destructor, we must define the copy and move operations. The `= default` is the best and simplest way of doing that.
+如果我们定义了构造函数，则必须也要定义拷贝和移动操作，使用`= default`是做这件事情最简单和最好的方式。
 
-##### Example, bad
+##### 糟糕的示例
 
     class Tracer2 {
         string message;
@@ -5925,36 +5920,36 @@ Because we defined the destructor, we must define the copy and move operations. 
         Tracer2& operator=(Tracer2&& a) { message = a.message; return *this; }
     };
 
-Writing out the bodies of the copy and move operations is verbose, tedious, and error-prone. A compiler does it better.
+写拷贝和移动操作的函数体是啰嗦的、乏味的和易于出错的，编译器可以做的更好。
 
 ##### Enforcement
 
-(Moderate) The body of a special operation should not have the same accessibility and semantics as the compiler-generated version, because that would be redundant
+(适中) 特殊操作的函数体不应当和编译器生成的版本具有相同的访问属性(*译注：公有、私有和受保护的*)和语义，因为这是冗余的。
 
-### <a name="Rc-delete"></a>C.81: Use `=delete` when you want to disable default behavior (without wanting an alternative)
+### <a name="Rc-delete"></a>C.81: 如果你不想要默认行为(不需要其他选择)，使用`= delete`
 
 ##### Reason
 
-In a few cases, a default operation is not desirable.
+在一些情况下，默认操作不是想要的。
 
 ##### Example
 
     class Immortal {
     public:
-        ~Immortal() = delete;   // do not allow destruction
+        ~Immortal() = delete;   // 不允许销毁
         // ...
     };
 
     void use()
     {
-        Immortal ugh;   // error: ugh cannot be destroyed
+        Immortal ugh;   // 错误：ugh不允许被销毁。译注：分配在栈上的变量会在超出使用域时自动调用析构函数，因此编译器会报告错误。
         Immortal* p = new Immortal{};
-        delete p;       // error: cannot destroy *p
+        delete p;       // 错误：不能销毁*p
     }
 
 ##### Example
 
-A `unique_ptr` can be moved, but not copied. To achieve that its copy operations are deleted. To avoid copying it is necessary to `=delete` its copy operations from lvalues:
+`unique_ptr`可以被移动，但不可以被拷贝，以此来实现删除拷贝操作。为了避免拷贝左传，有必要`= delete`它的拷贝操作。
 
     template <class T, class D = default_delete<T>> class unique_ptr {
     public:
@@ -5962,86 +5957,85 @@ A `unique_ptr` can be moved, but not copied. To achieve that its copy operations
         constexpr unique_ptr() noexcept;
         explicit unique_ptr(pointer p) noexcept;
         // ...
-        unique_ptr(unique_ptr&& u) noexcept;   // move constructor
+        unique_ptr(unique_ptr&& u) noexcept;   // 移动构造函数
         // ...
-        unique_ptr(const unique_ptr&) = delete; // disable copy from lvalue
+        unique_ptr(const unique_ptr&) = delete; // 禁止拷贝左值
         // ...
     };
 
-    unique_ptr<int> make();   // make "something" and return it by moving
+    unique_ptr<int> make();   // 制作”一些东西“，通过移动来返回
 
     void f()
     {
         unique_ptr<int> pi {};
-        auto pi2 {pi};      // error: no move constructor from lvalue
-        auto pi3 {make()};  // OK, move: the result of make() is an rvalue
+        auto pi2 {pi};      // 错误：没有从左值的移动构造函数
+        auto pi3 {make()};  // OK，移动：make()的结果是一个右值
     }
 
-Note that deleted functions should be public.
+注意，被删除的函数应当是公有的。
 
 ##### Enforcement
 
-The elimination of a default operation is (should be) based on the desired semantics of the class. Consider such classes suspect, but maintain a "positive list" of classes where a human has asserted that the semantics is correct.
+(应当是)根据类期望的语义来消除默认操作。考虑这样的类是可疑的，但是要维护一个类的“白名单”，由人来判断它的语义是正确的。
 
-### <a name="Rc-ctor-virtual"></a>C.82: Don't call virtual functions in constructors and destructors
+### <a name="Rc-ctor-virtual"></a>C.82: 不要在构造函数和析构函数中调用虚函数
 
 ##### Reason
 
-The function called will be that of the object constructed so far, rather than a possibly overriding function in a derived class.
-This can be most confusing.
-Worse, a direct or indirect call to an unimplemented pure virtual function from a constructor or destructor results in undefined behavior.
+被调用的函数是目前被构造的对象的，而不是一个可能被派生类重载的函数。
+这可能是让人迷惑的。
+糟糕的是，在构造或析构函数中直接或间接的调用一个未实现的纯虚函数会导致未定义的行为。
 
-##### Example, bad
+##### 糟糕的示例
 
     class Base {
     public:
-        virtual void f() = 0;   // not implemented
-        virtual void g();       // implemented with Base version
-        virtual void h();       // implemented with Base version
+        virtual void f() = 0;   // 未实现
+        virtual void g();       // 实现的基类版本
+        virtual void h();       // 实现的基类版本
     };
 
     class Derived : public Base {
     public:
-        void g() override;   // provide Derived implementation
-        void h() final;      // provide Derived implementation
+        void g() override;   // 提供的派生实现
+        void h() final;      // 提供的派生实现，译注：final表示h不能再被后续的派生类重载
 
         Derived()
         {
-            // BAD: attempt to call an unimplemented virtual function
+            // 糟糕：试图调用一个未实现的虚函数
             f();
 
-            // BAD: will call Derived::g, not dispatch further virtually
+            // 糟糕：将调用Derived::g，不会做进一的虚拟分派(即不会调用到后续派生类的重载) 
             g();
 
-            // GOOD: explicitly state intent to call only the visible version
+            // 好的：明确声明只调用可见版本的意图
             Derived::g();
 
-            // ok, no qualification needed, h is final
+            // ok，不需要限定，h是final的
             h();
         }
     };
 
-Note that calling a specific explicitly qualified function is not a virtual call even if the function is `virtual`.
+注意，调用一个特定的限定函数不是虚拟调用，即使函数是`virtual`的。
 
-**See also** [factory functions](#Rc-factory) for how to achieve the effect of a call to a derived class function without risking undefined behavior.
+**参见** [工厂方法](#Rc-factory)，了解如何在不冒未定义行为风险的情况下实现对派生类函数的调用的效果。
 
 ##### Note
 
-There is nothing inherently wrong with calling virtual functions from constructors and destructors.
-The semantics of such calls is type safe.
-However, experience shows that such calls are rarely needed, easily confuse maintainers, and become a source of errors when used by novices.
+在构造函数和析构函数中调用虚函数并没有本质上的错误，此类调用的语义是类型安全的。
+然而，经验表明，很少需要这样的调用，很容易使维护人员感到困惑，并且在新手使用时成为错误的来源。
 
 ##### Enforcement
 
-* Flag calls of virtual functions from constructors and destructors.
+* 标出在构造函数和析构函数中的虚函数调用。
 
-### <a name="Rc-swap"></a>C.83: For value-like types, consider providing a `noexcept` swap function
+### <a name="Rc-swap"></a>C.83: 对于值类型，考虑提供`noexcept`的swap函数
 
 ##### Reason
 
-A `swap` can be handy for implementing a number of idioms, from smoothly moving objects around to implementing assignment easily to providing a guaranteed commit function that enables strongly error-safe calling code. Consider using swap to implement copy assignment in terms of copy construction. See also [destructors, deallocation, and swap must never fail](#Re-never-fail).
+`swap`可以方便地实现许多习惯用法，从平稳地移动对象，到轻松地实现赋值，再到提供一个保证提交的函数，该函数支持强错误安全的调用代码。在拷贝构造方面考虑使用swap来实现拷贝赋值。参见[析构函数、释放和swap必须永远不会失败](#Re-never-fail)。
 
-##### Example, good
+##### 好的例子
 
     class Foo {
         // ...
@@ -6056,7 +6050,7 @@ A `swap` can be handy for implementing a number of idioms, from smoothly moving 
         int m2;
     };
 
-Providing a nonmember `swap` function in the same namespace as your type for callers' convenience.
+在相同的命名空间提供一个非成员的`swap`函数来为调用者提供方便。
 
     void swap(Foo& a, Foo& b)
     {
@@ -6065,47 +6059,47 @@ Providing a nonmember `swap` function in the same namespace as your type for cal
 
 ##### Enforcement
 
-* (Simple) A class without virtual functions should have a `swap` member function declared.
-* (Simple) When a class has a `swap` member function, it should be declared `noexcept`.
+* (简单) 没有虚函数的类应当声明一个名为`swap`的成员函数。
+* (简单) 如果类有一个名为`swap`的成员函数，该函数应当被声明为`noexcept`。
 
-### <a name="Rc-swap-fail"></a>C.84: A `swap` function may not fail
+### <a name="Rc-swap-fail"></a>C.84: `swap`函数不能失败
 
 ##### Reason
 
- `swap` is widely used in ways that are assumed never to fail and programs cannot easily be written to work correctly in the presence of a failing `swap`. The standard-library containers and algorithms will not work correctly if a swap of an element type fails.
+`swap`以假定永远不会失败的方式被广泛的使用，并且在出现能失败的`swap`时，很难编写能正确工作的程序。如果一种元素类型的交换失败，标准库容器和算法将无法正常工作。
 
-##### Example, bad
+##### 糟糕的例子
 
     void swap(My_vector& x, My_vector& y)
     {
-        auto tmp = x;   // copy elements
+        auto tmp = x;   // 拷贝元素
         x = y;
         y = tmp;
     }
 
-This is not just slow, but if a memory allocation occurs for the elements in `tmp`, this `swap` may throw and would make STL algorithms fail if used with them.
+这不仅仅是慢，而且如果`tmp`中的元素发生内存分配，`swap`可能会抛出异常，如果使用它们将导致STL算法不能正常工作。
 
 ##### Enforcement
 
-(Simple) When a class has a `swap` member function, it should be declared `noexcept`.
+(简单) 如果类具有`swap`成员函数，它应当被声明为`noexcept`。
 
-### <a name="Rc-swap-noexcept"></a>C.85: Make `swap` `noexcept`
+### <a name="Rc-swap-noexcept"></a>C.85: 让`swap`是`noexcept`的
 
 ##### Reason
 
- [A `swap` may not fail](#Rc-swap-fail).
-If a `swap` tries to exit with an exception, it's a bad design error and the program had better terminate.
+ [`swap`函数不能失败](#Rc-swap-fail)，
+如果`swap`试图在异常情况下退出，这是一个糟糕的设计错误，程序最好终止。
 
 ##### Enforcement
 
-(Simple) When a class has a `swap` member function, it should be declared `noexcept`.
+(简单) 如果类有`swap`成员函数，它应当被声明为`noexcept`。
 
-### <a name="Rc-eq"></a>C.86: Make `==` symmetric with respect to operand types and `noexcept`
+### <a name="Rc-eq"></a>C.86: 让`==`操作数类型对称和`noexcept`
 
 ##### Reason
 
-Asymmetric treatment of operands is surprising and a source of errors where conversions are possible.
-`==` is a fundamental operations and programmers should be able to use it without fear of failure.
+操作数的类型不对称会让人惊讶，并且在可能发生转换的地方会产生错误。
+`==`是一种基本操作，程序员应该能够使用它而不用担心失败。
 
 ##### Example
 
@@ -6118,7 +6112,7 @@ Asymmetric treatment of operands is surprising and a source of errors where conv
         return a.name == b.name && a.number == b.number;
     }
 
-##### Example, bad
+##### 糟糕的示例
 
     class B {
         string name;
@@ -6129,29 +6123,30 @@ Asymmetric treatment of operands is surprising and a source of errors where conv
         // ...
     };
 
-`B`'s comparison accepts conversions for its second operand, but not its first.
+`B`的比较的第二个参数接受类型转换，但第一个不会。
 
 ##### Note
 
-If a class has a failure state, like `double`'s `NaN`, there is a temptation to make a comparison against the failure state throw.
-The alternative is to make two failure states compare equal and any valid state compare false against the failure state.
+如果一个类具有失败状态，像`double`的`NaN`，很容易将抛出失败状态与之进行比较的异常。
+另一种方法是使两个失败状态比较相等，并且任何有效状态与失败状态相比较的结果都是`false`。
 
 ##### Note
 
-This rule applies to all the usual comparison operators: `!=`, `<`, `<=`, `>`, and `>=`.
+这条规则适用于所有常用的比较运算符: `!=`, `<`, `<=`, `>`, 和 `>=`.
 
 ##### Enforcement
 
-* Flag an `operator==()` for which the argument types differ; same for other comparison operators: `!=`, `<`, `<=`, `>`, and `>=`.
-* Flag member `operator==()`s; same for other comparison operators: `!=`, `<`, `<=`, `>`, and `>=`.
+* 标出参数类型不同的`operator==()`，对其它比较运算符也这样处理：`!=`, `<`, `<=`, `>`, 和 `>=`。
+* 标出成员`operator==()`，对其它比较运算符也这样处理：`!=`, `<`, `<=`, `>`, 和 `>=`。
 
-### <a name="Rc-eq-base"></a>C.87: Beware of `==` on base classes
+
+### <a name="Rc-eq-base"></a>C.87: 警惕基类的`==`
 
 ##### Reason
 
-It is really hard to write a foolproof and useful `==` for a hierarchy.
+真的很难为层次结构编写一个简单而有用的`==`。
 
-##### Example, bad
+##### 糟糕的例子
 
     class B {
         string name;
@@ -6163,7 +6158,7 @@ It is really hard to write a foolproof and useful `==` for a hierarchy.
         // ...
     };
 
-`B`'s comparison accepts conversions for its second operand, but not its first.
+`B`的比较运行符接受给第二个参数的类型转换，但第一个参数不接受(*译注：第一个参数就是this*)。
 
     class D :B {
         char character;
@@ -6176,34 +6171,34 @@ It is really hard to write a foolproof and useful `==` for a hierarchy.
 
     B b = ...
     D d = ...
-    b == d;    // compares name and number, ignores d's character
-    d == b;    // error: no == defined
+    b == d;    // 比较name和number，忽略的d的character
+    d == b;    // 错误：未定义的==。译注：B的==不接受第一个参数为D的指针，D的==不接受第二个参数为B类型
     D d2;
-    d == d2;   // compares name, number, and character
+    d == d2;   // 比较 name, number, 和 character
     B& b2 = d2;
-    b2 == d;   // compares name and number, ignores d2's and d's character
+    b2 == d;   // 比较name和number，忽略的d2和d的character
 
-Of course there are ways of making `==` work in a hierarchy, but the naive approaches do not scale
+当然，有一些方法可以让`==`在层次结构中工作，但是这些简单的方法不再适用。
 
 ##### Note
 
-This rule applies to all the usual comparison operators: `!=`, `<`, `<=`, `>`, and `>=`.
+这条规则适用于所有常用的比较运算符: `!=`, `<`, `<=`, `>`, 和 `>=`.
 
 ##### Enforcement
 
-* Flag a virtual `operator==()`; same for other comparison operators: `!=`, `<`, `<=`, `>`, and `>=`.
+* 标记虚拟的`operator==()`，以及其它虚拟的比较运算符：`!=`, `<`, `<=`, `>`, 和 `>=`。
 
-### <a name="Rc-hash"></a>C.89: Make a `hash` `noexcept`
+### <a name="Rc-hash"></a>C.89: 让`hash`函数是`noexcept`的
 
 ##### Reason
 
-Users of hashed containers use hash indirectly and don't expect simple access to throw.
-It's a standard-library requirement.
+哈希容器(*译注：如，`unordered_map`和`unordered_set`*)的用户直接使用哈希，不期望简单的使用会抛出异常。
+这是标准库要求的。
 
-##### Example, bad
+##### 糟糕的例子
 
     template<>
-    struct hash<My_type> {  // thoroughly bad hash specialization
+    struct hash<My_type> {  // 完全糟糕的hash的特化
         using result_type = size_t;
         using argument_type = My_type;
 
@@ -6223,21 +6218,21 @@ It's a standard-library requirement.
         cout << m[My_type{ "asdfg" }] << '\n';
     }
 
-If you have to define a `hash` specialization, try simply to let it combine standard-library `hash` specializations with `^` (xor).
-That tends to work better than "cleverness" for non-specialists.
+如果你不得不定义`hash`的特化，试着简单地使用`^`(xor，异或)来组合标准库的`hash`特化。
+这往往比非专业人士的“聪明”效果更好。
 
 ##### Enforcement
 
-* Flag throwing `hash`es.
+* 标出抛出异常的`hash`。
 
-## <a name="SS-containers"></a>C.con: Containers and other resource handles
+## <a name="SS-containers"></a>C.con: 容器和其它资源句柄
 
-A container is an object holding a sequence of objects of some type; `std::vector` is the archetypical container.
-A resource handle is a class that owns a resource; `std::vector` is the typical resource handle; its resource is its sequence of elements.
+容器是一个对象，它持有了某种类型对象的序列；`std::vector`是一个典型的容器。
+资源句柄是指拥有资源的类；`std::vector`是一个典型的资源句柄，它的资源是它的元素序列。
 
-Summary of container rules:
+容器的规则概述：
 
-* [C.100: Follow the STL when defining a container](#Rcon-stl)
+* [C.100: 当定义一个容器时，遵循STL](#Rcon-stl)
 * [C.101: Give a container value semantics](#Rcon-val)
 * [C.102: Give a container move operations](#Rcon-move)
 * [C.103: Give a container an initializer list constructor](#Rcon-init)
@@ -6245,14 +6240,14 @@ Summary of container rules:
 * ???
 * [C.109: If a resource handle has pointer semantics, provide `*` and `->`](#Rcon-ptr)
 
-**See also**: [Resources](#S-resource)
+**参见**: [Resources](#S-resource)
 
 
-### <a name="Rcon-stl"></a>C.100: Follow the STL when defining a container
+### <a name="Rcon-stl"></a>C.100: 当定义一个容器时，遵循STL
 
 ##### Reason
 
-The STL containers are familiar to most C++ programmers and a fundamentally sound design.
+STL容器对大多数C++程序员来说都很熟悉，并且是一种基本可靠的设计。
 
 ##### Note
 
@@ -15390,7 +15385,7 @@ The standard library assumes that destructors, deallocation functions (e.g., `op
 
 Deallocation functions, including `operator delete`, must be `noexcept`. `swap` functions must be `noexcept`.
 Most destructors are implicitly `noexcept` by default.
-Also, [make move operations `noexcept`](#Rc-move-noexcept).
+Also, [让移动操作是`noexcept`的](#Rc-move-noexcept).
 
 ##### Enforcement
 
@@ -21219,7 +21214,7 @@ In general, however, avoid concrete base classes (see Item 35). For example, `un
 
 ???
 
-### <a name="Sd-never-fail"></a>Discussion: Destructors, deallocation, and swap must never fail
+### <a name="Sd-never-fail"></a>Discussion: Destructors, deallocation, and swap must never fail 析构函数、释放和swap必须永远不会失败
 
 Never allow an error to be reported from a destructor, a resource deallocation function (e.g., `operator delete`), or a `swap` function using `throw`. It is nearly impossible to write useful code if these operations can fail, and even if something does go wrong it nearly never makes any sense to retry. Specifically, types whose destructors may throw an exception are flatly forbidden from use with the C++ Standard Library. Most destructors are now implicitly `noexcept` by default.
 
