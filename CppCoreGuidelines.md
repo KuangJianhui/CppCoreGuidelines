@@ -2179,10 +2179,10 @@ Parameter passing expression rules:
 
 其他函数规则:
 
-* [F.50: Use a lambda when a function won't do (to capture local variables, or to write a local function)](#Rf-capture-vs-overload)
+* [F.50: 当函数不起作用时使用lambda(捕获局部变量，或编写局部函数)](#Rf-capture-vs-overload)
 * [F.51: Where there is a choice, prefer default arguments over overloading](#Rf-default-args)
-* [F.52: Prefer capturing by reference in lambdas that will be used locally, including passed to algorithms](#Rf-reference-capture)
-* [F.53: Avoid capturing by reference in lambdas that will be used nonlocally, including returned, stored on the heap, or passed to another thread](#Rf-value-capture)
+* [F.52: 如果只是局部地使用，包括传递给算法，选择在lambda中使用引用进行捕获](#Rf-reference-capture)
+* [F.53: 如果不是本地使用，避免lambda捕获引用，包括返回、堆上存储、传递给其它线程](#Rf-value-capture)
 * [F.54: If you capture `this`, capture all variables explicitly (no default capture)](#Rf-this-capture)
 * [F.55: Don't use `va_arg` arguments](#F-varargs)
 
@@ -3489,7 +3489,7 @@ For passthrough functions that pass in parameters (by ordinary reference or by p
 
 应当使用工具来强制性地检查返回表达式。
 
-### <a name="Rf-capture-vs-overload"></a>F.50: 当函数不起作用时使用lambda(捕获局部变量，或编写局部函数) Use a lambda when a function won't do (to capture local variables, or to write a local function)
+### <a name="Rf-capture-vs-overload"></a>F.50: 当函数不起作用时使用lambda(捕获局部变量，或编写局部函数)
 
 ##### 原因
 
@@ -3553,7 +3553,7 @@ For passthrough functions that pass in parameters (by ordinary reference or by p
 
 * 给出警告，如果一组重载函数具有相同的前缀参数(例如，`f(int)`、 `f(int, const string&)`、 `f(int, const string&, double)`)。注意，如果在实践中不太实用，请检查该实施措施。
 
-### <a name="Rf-reference-capture"></a>F.52: 如果只是局部地使用，包括传递给算法，选择在lambda中使用引用进行捕获
+### <a name="Rf-reference-capture"></a>F.52: 如果只是局部地使用，包括传递给算法，在lambda中使用引用进行捕获
 
 ##### Reason
 
@@ -3595,7 +3595,7 @@ For passthrough functions that pass in parameters (by ordinary reference or by p
 标出通过引用捕获lambda，但不是在函数作用域中本地使用，也不是通过引用传递给函数。(注意：这条规则是一个近似值，但是要标出通过指针传递的lambda，这些指针更有可能由被调用者存储、通过访问参数写入堆内存、返回lambda，等等。`生命周期规则`还将提供标记转义指针和引用(包括通过lambda)的通用规则。)
 
 
-### <a name="Rf-value-capture"></a>F.53: 避免lambda捕获引用，如果不是本地使用，包括返回、堆上存储、传递给其它线程
+### <a name="Rf-value-capture"></a>F.53: 如果不是本地使用，避免lambda捕获引用，包括返回、堆上存储、传递给其它线程
 
 ##### 原因
 
@@ -6387,20 +6387,20 @@ STL容器对大多数C++程序员来说都很熟悉，并且是一种基本可�
 
 ???
 
-## <a name="SS-lambdas"></a>C.lambdas: Function objects and lambdas
+## <a name="SS-lambdas"></a>C.lambdas: 函数对象和Lambda
 
-A function object is an object supplying an overloaded `()` so that you can call it.
-A lambda expression (colloquially often shortened to "a lambda") is a notation for generating a function object.
-Function objects should be cheap to copy (and therefore [passed by value](#Rf-in)).
+函数对象是提供了`()`重载的对象，因此可以调用它。
+lambda表达式(通常通俗地缩写为lambda)是用于生成函数对象的符号。
+函数对象的拷贝成本应该很低(因此可以[通过值传递](#Rf-in))。
 
-Summary:
+概述:
 
-* [F.50: Use a lambda when a function won't do (to capture local variables, or to write a local function)](#Rf-capture-vs-overload)
-* [F.52: Prefer capturing by reference in lambdas that will be used locally, including passed to algorithms](#Rf-reference-capture)
-* [F.53: Avoid capturing by reference in lambdas that will be used nonlocally, including returned, stored on the heap, or passed to another thread](#Rf-value-capture)
+* [F.50: 当函数不起作用时使用lambda(捕获局部变量，或编写局部函数)](#Rf-capture-vs-overload)
+* [F.52: 如果只是局部地使用，包括传递给算法，选择在lambda中使用引用进行捕获](#Rf-reference-capture)
+* [F.53: 如果不是本地使用，避免lambda捕获引用，包括返回、堆上存储、传递给其它线程](#Rf-value-capture)
 * [ES.28: Use lambdas for complex initialization, especially of `const` variables](#Res-lambda-init)
 
-## <a name="SS-hier"></a>C.hier: Class hierarchies (OOP)
+## <a name="SS-hier"></a>C.hier: 类层次结构 (OOP)
 
 A class hierarchy is constructed to represent a set of hierarchically organized concepts (only).
 Typically base classes act as interfaces.
@@ -13424,47 +13424,32 @@ Performance is very sensitive to cache performance and cache algorithms favor si
 
 ???
 
-# <a name="S-concurrency"></a>CP: Concurrency and parallelism
+# <a name="S-concurrency"></a>CP: Concurrency and parallelism 并发和并行
 
-We often want our computers to do many tasks at the same time (or at least appear to do them at the same time).
-The reasons for doing so vary (e.g., waiting for many events using only a single processor, processing many data streams simultaneously, or utilizing many hardware facilities)
-and so do the basic facilities for expressing concurrency and parallelism.
-Here, we articulate principles and rules for using the ISO standard C++ facilities for expressing basic concurrency and parallelism.
+我们经常想让我们的电脑同时做很多事情(或者至少看起来是同时做很多事情)，
+这样做的原因各不相同(例如，多个事件等待使用一个处理器、同时处理多个数据流或使用多个硬件设施)，表示并发性和并行性的基本设施也是如此。
+在这里，我们阐明了使用ISO标准C++工具表示基础的并发和并行的原则和规则。
 
-Threads are the machine-level foundation for concurrent and parallel programming.
-Threads allow running multiple sections of a program independently, while sharing
-the same memory. Concurrent programming is tricky,
-because protecting shared data between threads is easier said than done.
-Making existing single-threaded code execute concurrently can be
-as trivial as adding `std::async` or `std::thread` strategically, or it can
-necessitate a full rewrite, depending on whether the original code was written
-in a thread-friendly way.
+线程是并发和并行编程的机器级基础。线程允许以共享内存的方式独立运行程序的多个部分。并发编程很棘手，因为保护线程间的共享数据说起来容易做起来难。让现有的单线程代码并发地执行可以像战略性地添加`std::async`或`std::thread`一样简单，或者根据原始代码是否以线程友好的方式编写来完全重写。
 
-The concurrency/parallelism rules in this document are designed with three goals
-in mind:
+在设计本文档中的并发/并行规则时考虑了三个目标：
 
-* To help in writing code that is amenable to being used in a threaded
-  environment
-* To show clean, safe ways to use the threading primitives offered by the
-  standard library
-* To offer guidance on what to do when concurrency and parallelism aren't giving
-  the performance gains needed
+* 帮助编写适合在线程环境中使用的代码。
+* 展示干净和安全地使用标准库提供的基本线程的方法。
+* 当并发和并行没有带来所需的性能收益时，提供有关应该做什么的指导。
 
-It is also important to note that concurrency in C++ is an unfinished
-story. C++11 introduced many core concurrency primitives, C++14 and C++17 improved on
-them, and there is much interest in making the writing of
-concurrent programs in C++ even easier. We expect some of the library-related
-guidance here to change significantly over time.
+要重点注意的是并发在C++中是一个未完结的故事。C++提供的核心的并发基元，C++14和C++17在此基础上进行改进，有动力让写C++的并发程序更加容易。
+我们希望这里与库相关的指南能随着时间而发生重大变化。
 
-This section needs a lot of work (obviously).
-Please note that we start with rules for relative non-experts.
-Real experts must wait a bit;
-contributions are welcome,
-but please think about the majority of programmers who are struggling to get their concurrent programs correct and performant.
+这个章节需要很有多的工作(显然的)，
+请注意，我们开始这些规则给那些相对非专家的人，
+真正的专家必须等待一段时间;
+贡献是受欢迎的，但是请考虑一下大多数正在努力使并发程序正确且性能良好的程序员。
 
-Concurrency and parallelism rule summary:
 
-* [CP.1: Assume that your code will run as part of a multi-threaded program](#Rconc-multi)
+并发和并行规则概述：
+
+* [CP.1: 假定你的代码会作为多线程程序的一部分来执行](#Rconc-multi)
 * [CP.2: Avoid data races](#Rconc-races)
 * [CP.3: Minimize explicit sharing of writable data](#Rconc-data)
 * [CP.4: Think in terms of tasks, rather than threads](#Rconc-task)
@@ -13480,7 +13465,7 @@ Concurrency and parallelism rule summary:
 * [CP.free: Lock-free programming](#SScp-free)
 * [CP.etc: Etc. concurrency rules](#SScp-etc)
 
-### <a name="Rconc-multi"></a>CP.1: Assume that your code will run as part of a multi-threaded program
+### <a name="Rconc-multi"></a>CP.1: 假定你的代码会作为多线程程序的一部分来执行
 
 ##### Reason
 
