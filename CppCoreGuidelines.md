@@ -13424,7 +13424,7 @@ Performance is very sensitive to cache performance and cache algorithms favor si
 
 ???
 
-# <a name="S-concurrency"></a>CP: Concurrency and parallelism 并发和并行
+# <a name="S-concurrency"></a>CP: 并发和并行
 
 我们经常想让我们的电脑同时做很多事情(或者至少看起来是同时做很多事情)，
 这样做的原因各不相同(例如，多个事件等待使用一个处理器、同时处理多个数据流或使用多个硬件设施)，表示并发性和并行性的基本设施也是如此。
@@ -13450,11 +13450,11 @@ Performance is very sensitive to cache performance and cache algorithms favor si
 并发和并行规则概述：
 
 * [CP.1: 假定你的代码会作为多线程程序的一部分来执行](#Rconc-multi)
-* [CP.2: Avoid data races](#Rconc-races)
-* [CP.3: Minimize explicit sharing of writable data](#Rconc-data)
-* [CP.4: Think in terms of tasks, rather than threads](#Rconc-task)
-* [CP.8: Don't try to use `volatile` for synchronization](#Rconc-volatile)
-* [CP.9: Whenever feasible use tools to validate your concurrent code](#Rconc-tools)
+* [CP.2: 避免数据竞争](#Rconc-races)
+* [CP.3: 最小化可写数据的显式共享](#Rconc-data)
+* [CP.4: 考虑使用任务，而不是线程](#Rconc-task)
+* [CP.8: 不要试图使用`volatile`来同步](#Rconc-volatile)
+* [CP.9: 只要可行，就使用工具来验证并发代码](#Rconc-tools)
 
 **See also**:
 
@@ -13469,11 +13469,9 @@ Performance is very sensitive to cache performance and cache algorithms favor si
 
 ##### Reason
 
-It is hard to be certain that concurrency isn't used now or will be sometime in the future.
-Code gets reused.
-Libraries using threads may be used from some other part of the program.
-Note that this applies most urgently to library code and least urgently to stand-alone applications.
-However, thanks to the magic of cut-and-paste, code fragments can turn up in unexpected places.
+很难确定现在没有使用的并发性在将来的某个时候会使用；代码可以得到复用；正在使用线程的库可能会被程序的其它部分使用。
+注意，这对库代码是迫切需要的，但对独立应用就不怎么迫切。
+然而，由于复制/粘贴的魔力，代码段可能会出现在意想不到的地方。
 
 ##### Example
 
@@ -13491,86 +13489,79 @@ However, thanks to the magic of cut-and-paste, code fragments can turn up in une
         return result;
     }
 
-Although `cached_computation` works perfectly in a single-threaded environment, in a multi-threaded environment the two `static` variables result in data races and thus undefined behavior.
+尽管`cached_computation`在单线程性环境下工作的很完美，但在多线程环境下，两个`static`变量会产生数据竞争(data race)，从而导致未定义的行为。
 
-There are several ways that this example could be made safe for a multi-threaded environment:
+有几种方法可以使这个例子在多线程环境下变得安全：
 
-* Delegate concurrency concerns upwards to the caller.
-* Mark the `static` variables as `thread_local` (which might make caching less effective).
-* Implement concurrency control, for example, protecting the two `static` variables with a `static` lock (which might reduce performance).
-* Have the caller provide the memory to be used for the cache, thereby delegating both memory allocation and concurrency concerns upwards to the caller.
-* Refuse to build and/or run in a multi-threaded environment.
-* Provide two implementations, one which is used in single-threaded environments and another which is used in multi-threaded environments.
+* 将并发性问题向上委托给调用方。
+* 标记`static`变量标记为`thread_local`(这可能会让缓存不再高效)。
+* 实现并发控制，例如，使用`static`锁来保护`static`变量(这可能会降低效率)。
+* 让调用者提供缓存的内存，因此将内存分配和并发性问题都向上委托给调用方。
+* 拒绝在多线程环境下构建和/或运行。
+* 提供两个实现，一个在单线程环境下使用，一个在多线程环境下使用。
 
-##### Exception
+##### 例外
 
-Code that is never run in a multi-threaded environment.
+永远不会在多线程环境下运行的代码。
 
-Be careful: there are many examples where code that was "known" to never run in a multi-threaded program
-was run as part of a multi-threaded program, often years later.
-Typically, such programs lead to a painful effort to remove data races.
-Therefore, code that is never intended to run in a multi-threaded environment should be clearly labeled as such and ideally come with compile or run-time enforcement mechanisms to catch those usage bugs early.
+小心：有很多"已知"永远不会在多线程程序中运行的代码被作为了多线程程序的一部分，这通常发生在几年以后。
+通常，这样的程序会产生很痛苦的工作来删除数据竞争。
+因此，从来没有打算在多线程环境中运行的代码应该清楚地标记出来，并且最好附带编译或运行时强制机制，以便尽早捕获这些使用错误。
 
-### <a name="Rconc-races"></a>CP.2: Avoid data races
+### <a name="Rconc-races"></a>CP.2: 避免数据竞争
 
 ##### Reason
 
-Unless you do, nothing is guaranteed to work and subtle errors will persist.
+除非你这样做，否则什么也不能保证有效，细微的错误也会持续存在。
 
 ##### Note
 
-In a nutshell, if two threads can access the same object concurrently (without synchronization), and at least one is a writer (performing a non-`const` operation), you have a data race.
-For further information of how to use synchronization well to eliminate data races, please consult a good book about concurrency.
+简而言之，如果两个线程可以并发地访问同一个对象(没有同步)，并且至少有一个线程是写线程(执行非`const`操作)，那么就存在数据竞争。
+有关如何更好地使用同步来消除数据争用的更多信息，请参阅一本关于并发性的好书。
 
 ##### Example, bad
 
-There are many examples of data races that exist, some of which are running in
-production software at this very moment. One very simple example:
+存在许多数据竞争的例子，其中一些软件正在生产环境中运行，一个非常简单的例子:
 
     int get_id() {
       static int id = 1;
       return id++;
     }
 
-The increment here is an example of a data race. This can go wrong in many ways,
-including:
+这里的`++`是一个数据竞争的例子，在很多方面都可能出错，包括：
 
-* Thread A loads the value of `id`, the OS context switches A out for some
-  period, during which other threads create hundreds of IDs. Thread A is then
-  allowed to run again, and `id` is written back to that location as A's read of
-  `id` plus one.
-* Thread A and B load `id` and increment it simultaneously.  They both get the
-  same ID.
+* 线程A加载了`id`的值，操作系统上下文将A切换出了一段时间，在此期间其它线程创建了几百个id，然后线程A被允许再次运行，然后将读取`id`时的值增加1写入了`id`。
+* 线程A和B同时加载`id`并增加它，它们有了相同的ID。
 
-Local static variables are a common source of data races.
+局部静态变量是数据竞争的一个常见来源。
 
-##### Example, bad:
+##### 糟糕的例子：
 
     void f(fstream&  fs, regex pat)
     {
         array<double, max> buf;
-        int sz = read_vec(fs, buf, max);            // read from fs into buf
+        int sz = read_vec(fs, buf, max);            // 从fs读到buf中
         gsl::span<double> s {buf};
         // ...
-        auto h1 = async([&]{ sort(par, s); });     // spawn a task to sort
+        auto h1 = async([&]{ sort(par, s); });     // 产生一个sort的任务
         // ...
-        auto h2 = async([&]{ return find_all(buf, sz, pat); });   // spawn a task to find matches
+        auto h2 = async([&]{ return find_all(buf, sz, pat); });   // 产生一个匹配查找的任务
         // ...
     }
 
-Here, we have a (nasty) data race on the elements of `buf` (`sort` will both read and write).
-All data races are nasty.
-Here, we managed to get a data race on data on the stack.
-Not all data races are as easy to spot as this one.
+这里，我们有一个`buf`元素的(令人讨厌的)数据竞争(`sort`会读和写)。
+所有的数据竞争都是令人讨厌的。
+这里，我们设法对堆栈上的数据进行数据竞争。
+并非所有的数据竞争都像这个一样容易发现。
 
-##### Example, bad:
+##### 糟糕的例子：
 
-    // code not controlled by a lock
+    // 没有使用锁进行控制的代码
 
     unsigned val;
 
     if (val < 5) {
-        // ... other thread can change val here ...
+        // ... 其它线程可能会在这里更改val ...
         switch (val) {
         case 0: // ...
         case 1: // ...
@@ -13580,35 +13571,33 @@ Not all data races are as easy to spot as this one.
         }
     }
 
-Now, a compiler that does not know that `val` can change will  most likely implement that `switch` using a jump table with five entries.
-Then, a `val` outside the `[0..4]` range will cause a jump to an address that could be anywhere in the program, and execution would proceed there.
-Really, "all bets are off" if you get a data race.
-Actually, it can be worse still: by looking at the generated code you may be able to determine where the stray jump will go for a given value;
-this can be a security risk.
+现在，编译器不知道`val`可能会发生变化，编译器很可能会用一个有5个条目跳表来实现`switch`。
+然后，超出`[0..4]`范围的`val`会引起跳转到程序的任何地方，并在那个地方执行。
+真的，如果你有一个数据竞争，所有的情况都是不可预测的。
+事实上，可能会更糟：通过查看生成的代码，你可能可以确定对于给定的值会跳转到什么地方；这可能是一个安全风险。（*译注：指一个安全漏洞，如可以绕过某些检查来执行一些代码*）
 
 ##### Enforcement
 
-Some is possible, do at least something.
-There are commercial and open-source tools that try to address this problem,
-but be aware that solutions have costs and blind spots.
-Static tools often have many false positives and run-time tools often have a significant cost.
-We hope for better tools.
-Using multiple tools can catch more problems than a single one.
+有些是可以强制执行的，至少要做些什么，
+有一些商业和开源的工具来尝试定位这个问题，
+但请注意，这些方案都是有开销和盲区的，
+静态工具通常有许多误报，而运行时工具通常有昂贵的开销。
+我们希望能有更好的工具，使用多个工具可以比单一工具捕获更多的问题。
 
-There are other ways you can mitigate the chance of data races:
+还有其他方法可以减少数据竞争的机会：
 
-* Avoid global data
-* Avoid `static` variables
-* More use of value types on the stack (and don't pass pointers around too much)
-* More use of immutable data (literals, `constexpr`, and `const`)
+* 避免全局数据。
+* 避免静态变量。
+* 更多地在栈上使用值类型(不要过多地传递指针)。
+* 更多地使用不可变数据(字面值、`constexpr`和`const`)。
 
-### <a name="Rconc-data"></a>CP.3: Minimize explicit sharing of writable data
+### <a name="Rconc-data"></a>CP.3: 最小化可写数据的显式共享
 
 ##### Reason
 
-If you don't share writable data, you can't have a data race.
-The less sharing you do, the less chance you have to forget to synchronize access (and get data races).
-The less sharing you do, the less chance you have to wait on a lock (so performance can improve).
+如果你不共享可写数据，就不会有数据竞争。
+越少的共享，越少忘记同步访问的机会(会有数据竞争)。
+越少的共享，越少需要等待锁的机会(可以提升性能)。
 
 ##### Example
 
@@ -13629,34 +13618,33 @@ The less sharing you do, the less chance you have to wait on a lock (so performa
         // ...
     }
 
-Without those `const`s, we would have to review every asynchronously invoked function for potential data races on `surface_readings`.
-Making `surface_readings` be `const` (with respect to this function) allow reasoning using only the function body.
+没有`const`，你就需要审阅所有的异步函数调用，这些调用在`surface_readings`上可能有数据竞争。
+通过将`surface_readings`设为`const`，只允许(本函数的)函数体进行推理使用(*译注：推理使用不会修改数据*)。
 
 ##### Note
 
-Immutable data can be safely and efficiently shared.
-No locking is needed: You can't have a data race on a constant.
-See also [CP.mess: Message Passing](#SScp-mess) and [CP.31: prefer pass by value](#Rconc-data-by-value).
+不可变数据可以安全而高效地共享，不需要锁来同步：你不会有一个关于常量的数据竞争。
+参见[CP.mess: 消息传递](#SScp-mess) 和 [CP.31: 优先按值传递](#Rconc-data-by-value).
 
 ##### Enforcement
 
 ???
 
 
-### <a name="Rconc-task"></a>CP.4: Think in terms of tasks, rather than threads
+### <a name="Rconc-task"></a>CP.4: 考虑使用任务，而不是线程
 
 ##### Reason
 
-A `thread` is an implementation concept, a way of thinking about the machine.
-A task is an application notion, something you'd like to do, preferably concurrently with other tasks.
-Application concepts are easier to reason about.
+`thread`是实现的概念，一种关于机器的思考方式。
+任务(task)是一个应用概念，是你想做的事，更适合与其它任务并发。
+应用概念更容易理解。
 
 ##### Example
 
     void some_fun() {
         std::string msg, msg2;
-        std::thread publisher([&] { msg = "Hello"; });       // bad: less expressive
-                                                             //      and more error-prone
+        std::thread publisher([&] { msg = "Hello"; });       // 不好：开销有些大
+                                                             //      且易于出错
         auto pubtask = std::async([&] { msg2 = "Hello"; });  // OK
         // ...
         publisher.join();
@@ -13664,35 +13652,33 @@ Application concepts are easier to reason about.
 
 ##### Note
 
-With the exception of `async()`, the standard-library facilities are low-level, machine-oriented, threads-and-lock level.
-This is a necessary foundation, but we have to try to raise the level of abstraction: for productivity, for reliability, and for performance.
-This is a potent argument for using higher level, more applications-oriented libraries (if possibly, built on top of standard-library facilities).
+除了`async()`之外，标准库的功能都是低级的、面向机器的、线程和锁级别的。
+这是一个必要的基础，但是我们必须尝试提高抽象级别：为了生产力、可靠性和性能。
+这是使用更高级、更面向应用程序的库(如果可能的话，构建在标准库设施之上)的有力论据。
 
 ##### Enforcement
 
 ???
 
-### <a name="Rconc-volatile"></a>CP.8: Don't try to use `volatile` for synchronization
+### <a name="Rconc-volatile"></a>CP.8: 不要试图使用`volatile`来同步
 
 ##### Reason
 
-In C++, unlike some other languages, `volatile` does not provide atomicity, does not synchronize between threads,
-and does not prevent instruction reordering (neither compiler nor hardware).
-It simply has nothing to do with concurrency.
+不像其它语言，C++中的`volatile`并不提供原子性，线性之间不进行同步，也不阻止指令重排(编译器或硬件)。
+它与并发性没有任何关系。
 
 ##### Example, bad:
 
-    int free_slots = max_slots; // current source of memory for objects
+    int free_slots = max_slots; // current source of memory for objects 
 
     Pool* use()
     {
         if (int n = free_slots--) return &pool[n];
     }
 
-Here we have a problem:
-This is perfectly good code in a single-threaded program, but have two threads execute this and
-there is a race condition on `free_slots` so that two threads might get the same value and `free_slots`.
-That's (obviously) a bad data race, so people trained in other languages may try to fix it like this:
+在这里，我们有一个问题：
+在单线程程序中这是一段完美的好代码，但我们有两个线程来执行这段代码，在`free_slots`上有一个数据竞争，所以两个线程可能得到了相同的值和`free_slots`。
+这(显然)是一个严重的数据竞争，因此接受过其他语言培训的人可能会试图这样解决问题：
 
     volatile int free_slots = max_slots; // current source of memory for objects
 
@@ -13701,9 +13687,9 @@ That's (obviously) a bad data race, so people trained in other languages may try
         if (int n = free_slots--) return &pool[n];
     }
 
-This has no effect on synchronization: The data race is still there!
+这在同步上不起作用：数据竞争依然还在！
 
-The C++ mechanism for this is `atomic` types:
+C++的机制是`atomic`类型：
 
     atomic<int> free_slots = max_slots; // current source of memory for objects
 
@@ -13712,19 +13698,18 @@ The C++ mechanism for this is `atomic` types:
         if (int n = free_slots--) return &pool[n];
     }
 
-Now the `--` operation is atomic,
-rather than a read-increment-write sequence where another thread might get in-between the individual operations.
+现在，`--`操作是原子的，而不是另一个线程可能在各个操作之间插入的`读-增加-写`序列。
 
-##### Alternative
+##### 可选方案
 
-Use `atomic` types where you might have used `volatile` in some other language.
-Use a `mutex` for more complicated examples.
+在其它语言可能要使用`volatile`的地方使用`atomic`。
+对于更复杂的例子，使用`mutex`。
 
-##### See also
+##### 参见
 
-[(rare) proper uses of `volatile`](#Rconc-volatile2)
+[(很少)正确使用`volatile`](#Rconc-volatile2)
 
-### <a name="Rconc-tools"></a>CP.9: Whenever feasible use tools to validate your concurrent code
+### <a name="Rconc-tools"></a>CP.9: 只要可行，就使用工具来验证并发代码
 
 Experience shows that concurrent code is exceptionally hard to get right
 and that compile-time checking, run-time checks, and testing are less effective at finding concurrency errors
