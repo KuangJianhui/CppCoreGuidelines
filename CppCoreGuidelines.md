@@ -13711,10 +13711,8 @@ C++的机制是`atomic`类型：
 
 ### <a name="Rconc-tools"></a>CP.9: 只要可行，就使用工具来验证并发代码
 
-Experience shows that concurrent code is exceptionally hard to get right
-and that compile-time checking, run-time checks, and testing are less effective at finding concurrency errors
-than they are at finding errors in sequential code.
-Subtle concurrency errors can have dramatically bad effects, including memory corruption and deadlocks.
+经验表明，相比于串行代码，并发代码很难正确，并且编译时检查、运行时检查、和测试都不能有效的发现并发错误。
+轻微的并发错误可能导致严重的影响，包括内存损坏和死锁。
 
 ##### Example
 
@@ -13722,45 +13720,38 @@ Subtle concurrency errors can have dramatically bad effects, including memory co
 
 ##### Note
 
-Thread safety is challenging, often getting the better of experienced programmers: tooling is an important strategy to mitigate those risks.
-There are many tools "out there", both commercial and open-source tools, both research and production tools.
-Unfortunately people's needs and constraints differ so dramatically that we cannot make specific recommendations,
-but we can mention:
+线程安全是一个挑战，通常会让经验丰富的程序员受益：工具是减轻这些风险的一个重要策略。
+市场上有很多工作，包括商业的和开源的工具，研究和生产工具。
+不幸的是，人们的需求和限制差别太大，我们无法提出具体的建议，
+但是我们可以提到：
 
-* Static enforcement tools: both [clang](http://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
-and some older versions of [GCC](https://gcc.gnu.org/wiki/ThreadSafetyAnnotation)
-have some support for static annotation of thread safety properties.
-Consistent use of this technique turns many classes of thread-safety errors into compile-time errors.
-The annotations are generally local (marking a particular member variable as guarded by a particular mutex),
-and are usually easy to learn. However, as with many static tools, it can often present false negatives;
-cases that should have been caught but were allowed.
+* 静态执行工具：[clang](http://clang.llvm.org/docs/ThreadSafetyAnalysis.html)和一些老版的[GCC](https://gcc.gnu.org/wiki/ThreadSafetyAnnotation)对线程安全属性的静态标记(static annotation)有一定的支持。
+一致地使用这些技术可以将许多种类的线程安全错误转成编译时错误，
+这些标记通常是局部的(将特殊的成员变量使用特殊的mutex进行保护)，并且通常也容易学习。
+然而，与许多静态工具一样，它也会常常出现误报，以及放过那些本该本抓住的错误。
 
-* dynamic enforcement tools: Clang's [Thread Sanitizer](http://clang.llvm.org/docs/ThreadSanitizer.html) (aka TSAN)
-is a powerful example of dynamic tools: it changes the build and execution of your program to add bookkeeping on memory access,
-absolutely identifying data races in a given execution of your binary.
-The cost for this is both memory (5-10x in most cases) and CPU slowdown (2-20x).
-Dynamic tools like this are best when applied to integration tests, canary pushes, or unittests that operate on multiple threads.
-Workload matters: When TSAN identifies a problem, it is effectively always an actual data race,
-but it can only identify races seen in a given execution.
+* 动态执行工具：Clang的[Thread Sanitizer](http://clang.llvm.org/docs/ThreadSanitizer.html)(也称为`TSAN`)是动态工具的一个例子：它通过更改程序的构建和执行来增加内存访问的记账功能，在二进制的给定执行中绝对地定位出数据竞争，这会有内存(大多数情况下有5-10倍)和CPU(2-20倍)上的开销。
+当应用于集成测试、金丝雀发布(*译注：又称灰度发布，金丝雀对瓦斯极敏感，矿井工人携带金丝雀，以便及时发发现危险。*)或在多个线程上运行的单元测试时，这样的动态工具是最好的。
+负载问题：当TSAN定位到问题，它实际上总是一个真正的数据竞争，但它只能在给定的执行中定位出数据竞争(*译注：言外之意是不能发现其它潜在的数据竞争问题*)
 
 ##### Enforcement
 
-It is up to an application builder to choose which support tools are valuable for a particular applications.
+应用程序的构建者可以选择对特定应用程序有价值的支持工具。
 
-## <a name="SScp-con"></a>CP.con: Concurrency
+## <a name="SScp-con"></a>CP.con: 并发
 
-This section focuses on relatively ad-hoc uses of multiple threads communicating through shared data.
+本节主要讨论通过共享数据通信的多线程这一相对特殊的用法。
 
-* For parallel algorithms, see [parallelism](#SScp-par)
-* For inter-task communication without explicit sharing, see [messaging](#SScp-mess)
-* For vector parallel code, see [vectorization](#SScp-vec)
-* For lock-free programming, see [lock free](#SScp-free)
+* 对于并行算法，参见[并行性](#SScp-par)。
+* 对于没有显式共享的任务间通信，参见[消息](#SScp-mess)。
+* 对于向量并行代码，参风[向量化](#SScp-vec)。
+* 对于无锁编程，参见[无锁](#SScp-free)。
 
-Concurrency rule summary:
+并发规则概述：
 
-* [CP.20: Use RAII, never plain `lock()`/`unlock()`](#Rconc-raii)
+* [CP.20: 使用RAII，永远不要简单的`lock()`/`unlock()`](#Rconc-raii)
 * [CP.21: Use `std::lock()` or `std::scoped_lock` to acquire multiple `mutex`es](#Rconc-lock)
-* [CP.22: Never call unknown code while holding a lock (e.g., a callback)](#Rconc-unknown)
+* [CP.22: 当持有一个锁时，永远不要调用未知的代码(如，回调函数)](#Rconc-unknown)
 * [CP.23: Think of a joining `thread` as a scoped container](#Rconc-join)
 * [CP.24: Think of a `thread` as a global container](#Rconc-detach)
 * [CP.25: Prefer `gsl::joining_thread` over `std::thread`](#Rconc-joining_thread)
@@ -13779,11 +13770,11 @@ Concurrency rule summary:
 * ??? Time multiplexing
 * ??? when/how to use `new thread`
 
-### <a name="Rconc-raii"></a>CP.20: Use RAII, never plain `lock()`/`unlock()`
+### <a name="Rconc-raii"></a>CP.20: 使用RAII，永远不要简单的`lock()`/`unlock()`
 
 ##### Reason
 
-Avoids nasty errors from unreleased locks.
+避免由未释放的锁引起的令人讨厌折错误。
 
 ##### Example, bad
 
@@ -13796,7 +13787,7 @@ Avoids nasty errors from unreleased locks.
         mtx.unlock();
     }
 
-Sooner or later, someone will forget the `mtx.unlock()`, place a `return` in the `... do stuff ...`, throw an exception, or something.
+迟早会有人忘记`mtx.unlock()`，然后在`... do stuff ...`中放一个`return`语句、抛出异常或其它。
 
     mutex mtx;
 
@@ -13808,18 +13799,18 @@ Sooner or later, someone will forget the `mtx.unlock()`, place a `return` in the
 
 ##### Enforcement
 
-Flag calls of member `lock()` and `unlock()`.  ???
+标出`lock()`和`unlock()`的调用。
 
 
 ### <a name="Rconc-lock"></a>CP.21: Use `std::lock()` or `std::scoped_lock` to acquire multiple `mutex`es
 
 ##### Reason
 
-To avoid deadlocks on multiple `mutex`es.
+避免在多个`mutex`上的死锁。
 
 ##### Example
 
-This is asking for deadlock:
+这是为了死锁：
 
     // thread 1
     lock_guard<mutex> lck1(m1);
@@ -13829,7 +13820,7 @@ This is asking for deadlock:
     lock_guard<mutex> lck2(m2);
     lock_guard<mutex> lck1(m1);
 
-Instead, use `lock()`:
+相反，使用`lock()`:
 
     // thread 1
     lock(m1, m2);
@@ -13841,7 +13832,7 @@ Instead, use `lock()`:
     lock_guard<mutex> lck2(m2, adopt_lock);
     lock_guard<mutex> lck1(m1, adopt_lock);
 
-or (better, but C++17 only):
+或 (更好，但只在C++17中)
 
     // thread 1
     scoped_lock<mutex, mutex> lck1(m1, m2);
@@ -13849,30 +13840,29 @@ or (better, but C++17 only):
     // thread 2
     scoped_lock<mutex, mutex> lck2(m2, m1);
 
-Here, the writers of `thread1` and `thread2` are still not agreeing on the order of the `mutex`es, but order no longer matters.
+这里，`thread1`和`thread2`的编写者仍未就`mutex`的顺序达成意见一致，但是顺序已不再重要。
 
 ##### Note
 
-In real code, `mutex`es are rarely named to conveniently remind the programmer of an intended relation and intended order of acquisition.
-In real code, `mutex`es are not always conveniently acquired on consecutive lines.
+在实际代码中，`mutex`很少被命名，以方便程序员记住预期的关系和预期的获取顺序。
+在实际代码中，`mutex`并不总是在连续的行上方便地获取。
 
-In C++17 it's possible to write plain
+在c++ 17中可以写得很清楚
 
     lock_guard lck1(m1, adopt_lock);
 
-and have the `mutex` type deduced.
+自动推导`mutex`的类型。
 
 ##### Enforcement
 
-Detect the acquisition of multiple `mutex`es.
-This is undecidable in general, but catching common simple examples (like the one above) is easy.
+检查多个`mutex`的获取，
+这通常是无法判断的，但捕获常见的简单例子(像上面这个)是比较容易的。
 
-
-### <a name="Rconc-unknown"></a>CP.22: Never call unknown code while holding a lock (e.g., a callback)
+### <a name="Rconc-unknown"></a>CP.22: 当持有一个锁时，永远不要调用未知的代码(如，回调函数)
 
 ##### Reason
 
-If you don't know what a piece of code does, you are risking deadlock.
+如果你不知道一段代码要做什么，就有死锁的风险。
 
 ##### Example
 
@@ -13884,14 +13874,13 @@ If you don't know what a piece of code does, you are risking deadlock.
         // ...
     }
 
-If you don't know what `Foo::act` does (maybe it is a virtual function invoking a derived class member of a class not yet written),
-it may call `do_this` (recursively) and cause a deadlock on `my_mutex`.
-Maybe it will lock on a different mutex and not return in a reasonable time, causing delays to any code calling `do_this`.
+如果你不知道`Foo::act`的功能(它可能是一个虚函数，会调用到一个还没有写的派生类的成员)，它可能(递归地)调用了`do_this`，导致了在`my_mutex`上的死锁。
+它可能锁住了另一个互斥量，在一个合理的时间内没有返回，导致任何调用`do_this`的代码延迟。
 
 ##### Example
 
-A common example of the "calling unknown code" problem is a call to a function that tries to gain locked access to the same object.
-Such problem can often be solved by using a `recursive_mutex`. For example:
+“调用未知代码”问题的一个常见示例是调用一个试图获得对同一对象进行锁定访问的函数。
+这类问题通常可以通过`recursive_mutex`来解决，例如:
 
     recursive_mutex my_mutex;
 
@@ -13900,24 +13889,23 @@ Such problem can often be solved by using a `recursive_mutex`. For example:
     {
         unique_lock<recursive_mutex> lck {my_mutex};
         // ... do something ...
-        f(this);    // f will do something to *this
+        f(this);    // f会使用*this做些事情(需要锁进行同步)
         // ...
     }
 
-If, as it is likely, `f()` invokes operations on `*this`, we must make sure that the object's invariant holds before the call.
+如果(很有可能)`f()`调用了一些在`*this`上的操作，我们在调用之前必须确保对象能保持它的不变式。
 
 ##### Enforcement
 
-* Flag calling a virtual function with a non-recursive `mutex` held
-* Flag calling a callback with a non-recursive `mutex` held
+* 标出使用了非递归`mutex`的虚函数的调用。
+* 标出使用了非递归`mutex`的回调函数函数。
 
-
-### <a name="Rconc-join"></a>CP.23: Think of a joining `thread` as a scoped container
+### <a name="Rconc-join"></a>CP.23: Think of a joining `thread` as a scoped container 将一个正在`join`的线程当成一个区域容器
 
 ##### Reason
 
-To maintain pointer safety and avoid leaks, we need to consider what pointers are used by a `thread`.
-If a `thread` joins, we can safely pass pointers to objects in the scope of the `thread` and its enclosing scopes.
+为了安全地管理指针和避免泄漏，我们需要考虑哪些指针被线程所使用。
+如果一个线程被join了，我们可以安全地传递指针到线程及其闭合范围内对象。
 
 ##### Example
 
